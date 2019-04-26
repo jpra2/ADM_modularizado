@@ -61,6 +61,7 @@ class MeshManager:
         for f in self.all_faces:
             self.set_area(f)'''
         print("took",time.time()-t0)
+        self.get_faces_boundary()
 
     def create_tags(self):
         self.perm_tag = self.mb.tag_get_handle("PERM", 9, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
@@ -75,6 +76,7 @@ class MeshManager:
         self.ID_reordenado_tag = self.mb.tag_get_handle("ID_reord_tag", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
         self.phi_tag = self.mb.tag_get_handle("PHI", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         self.k_eq_tag = self.mb.tag_get_handle("K_EQ", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        self.cent_tag = self.mb.tag_get_handle("CENT", 3, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
 
 
     def create_vertices(self, coords):
@@ -272,6 +274,7 @@ class MeshManager:
                 self.mb.add_entities(all_faces_boundary_set, [face])
 
         self.mb.tag_set_data(self.all_faces_boundary_tag, 0, all_faces_boundary_set)
+        self.all_faces_boundary = self.mb.get_entities_by_handle(all_faces_boundary_set)
 
     def get_non_boundary_volumes(self, dirichlet_nodes, neumann_nodes):
         volumes = self.all_volumes

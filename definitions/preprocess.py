@@ -21,8 +21,11 @@ bif_dir = os.path.join(flying_dir, 'bifasico')
 ### deletar o conteudo das pastas no diretorio flying
 shutil.rmtree(mono_dir)
 shutil.rmtree(bif_dir)
+shutil.rmtree(flying_dir)
+os.makedirs(flying_dir)
 os.makedirs(mono_dir)
 os.makedirs(bif_dir)
+################################
 
 os.chdir(input_dir)
 with open("inputs.yaml", 'r') as stream:
@@ -34,10 +37,7 @@ input_file = data_loaded['input_file']
 ext_msh = input_file + '.msh'
 MM = MeshManager(ext_msh)
 bifasico = data_loaded['bifasico']
-if bifasico:
-    os.chdir(bif_dir)
-else:
-    os.chdir(mono_dir)
+os.chdir(flying_dir)
 
 def Min_Max(e):
     verts = MM.mb.get_connectivity(e)
@@ -48,6 +48,8 @@ def Min_Max(e):
 
 all_volumes=MM.all_volumes
 all_centroids = MM.all_centroids
+for i, j in zip(all_volumes, all_centroids):
+    MM.mb.tag_set_data(MM.cent_tag, i, j)
 
 verts = MM.mb.get_connectivity(all_volumes[0])
 coords = MM.mb.get_coords(verts).reshape([len(verts), 3])
@@ -63,11 +65,8 @@ maxs = coords.max(axis=0)
 Ltotal = maxs - mins + 1e-9 ### correcao de ponto flutuante
 Lx, Ly, Lz = Ltotal
 
-
-
-
-
-nx, ny, nz = (Ltotal/(maxs - mins)).astype(np.int32)
+# nx, ny, nz = (Ltotal/(maxs - mins)).astype(np.int32)
+nx, ny, nz = (Ltotal/(np.array([lx, ly, lz])) + 1e-9).astype(np.int32)
 
 # Distância, em relação ao poço, até onde se usa malha fina
 r0 = data_loaded['rs']['r0']
@@ -76,6 +75,8 @@ r1 = data_loaded['rs']['r1']
 
 l1=data_loaded['Ls']['L1']
 l2=data_loaded['Ls']['L2']
+
+
 
 print("")
 print("INICIOU PRÉ PROCESSAMENTO")
@@ -324,5 +325,3 @@ ext_h5m = input_file + '_dual_primal.h5m'
 ext_vtk = input_file + '_dual_primal.vtk'
 MM.mb.write_file(ext_h5m)
 MM.mb.write_file(ext_vtk, [AV_meshset])
-
-import pdb; pdb.set_trace()

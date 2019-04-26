@@ -27,7 +27,7 @@ Wells_structured:
     id: 'I1'
     type_region: 'box'
     region1: [0.0, 0.0, 0.0]
-    region2: [1.0, 27.0, 27.0]
+    region2: [20, 10, 60]
     type_prescription: 'neumann'
     value: 72900.0
     type_well: 'injector'
@@ -36,8 +36,8 @@ Wells_structured:
   P2:
     id: 'P1'
     type_region: 'box'
-    region1: [26.0, 0.0, 0.0]
-    region2: [27.0, 27.0, 27.0]
+    region1: [270.0, 270.0, 0.0]
+    region2: [280.0, 280.0, 60.0]
     type_prescription: 'dirichlet'
     value: 100.0
     type_well: 'producer'
@@ -54,6 +54,10 @@ dados_bifasico:
   noil: 2.0
   loops: 1000
   total_time: 1000
+
+dados_monofasico:
+  mi: 1.0
+  gama: 10
 
 tempos_vpi_impressao: [0.25, 0.5, 0.75, 0.8, 0.9]
 contar_loop: False
