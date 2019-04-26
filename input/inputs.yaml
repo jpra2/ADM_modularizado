@@ -36,7 +36,7 @@ Wells_structured:
   P2:
     id: 'P1'
     type_region: 'box'
-    region1: [270.0, 270.0, 0.0]
+    region1: [260.0, 270.0, 0.0]
     region2: [280.0, 280.0, 60.0]
     type_prescription: 'dirichlet'
     value: 100.0

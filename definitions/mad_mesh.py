@@ -6,6 +6,7 @@ import os
 import yaml
 import sys
 from utils import pymoab_utils as utpy
+from definitions.functions1 import *
 
 parent_dir = os.path.dirname(os.path.abspath(__file__))
 parent_parent_dir = os.path.dirname(parent_dir)
@@ -14,7 +15,6 @@ flying_dir = os.path.join(parent_parent_dir, 'flying')
 utils_dir = os.path.join(parent_parent_dir, 'utils')
 mono_dir = os.path.join(flying_dir, 'monofasico')
 bif_dir = os.path.join(flying_dir, 'bifasico')
-
 
 os.chdir(input_dir)
 with open("inputs.yaml", 'r') as stream:
@@ -46,6 +46,8 @@ mb.tag_set_data(wells_injector_tag, 0, wells_injector)
 mb.tag_set_data(wells_producer_tag, 0, wells_producer)
 
 bifasico = data_loaded['bifasico']
+r0 = data_loaded['rs']['r0']
+r1 = data_loaded['rs']['r1']
 
 if bifasico:
     ############################################################
@@ -91,6 +93,9 @@ Lx, Ly, Lz = Ltotal
 
 gravity = data_loaded['gravity']
 
+bvd = []
+bvn = []
+
 inds_wells = []
 for well in data_loaded['Wells_structured']:
     w = data_loaded['Wells_structured'][well]
@@ -113,6 +118,7 @@ for well in data_loaded['Wells_structured']:
     value = float(w['value'])
 
     if w['type_prescription'] == 'dirichlet':
+        bvd.append(box_volumes)
         if gravity == False:
             pressao = np.repeat(value, len(volumes))
 
@@ -124,6 +130,7 @@ for well in data_loaded['Wells_structured']:
         mb.tag_set_data(press_value_tag, volumes, pressao)
 
     elif  w['type_prescription'] == 'neumann':
+        bvn.append(box_volumes)
         value = value/len(volumes)
         if w['type_well'] == 'injector':
             value = -value
@@ -136,3 +143,56 @@ for well in data_loaded['Wells_structured']:
         mb.add_entities(wells_injector, volumes)
     else:
         mb.add_entities(wells_producer, volumes)
+
+
+bvd = bvd[0]
+bvn = bvn[0]
+
+bvfd = np.array([np.array([bvd[0][0]-r0, bvd[0][1]-r0, bvd[0][2]-r0]), np.array([bvd[1][0]+r0, bvd[1][1]+r0, bvd[1][2]+r0])])
+bvfn = np.array([np.array([bvn[0][0]-r0, bvn[0][1]-r0, bvn[0][2]-r0]), np.array([bvn[1][0]+r0, bvn[1][1]+r0, bvn[1][2]+r0])])
+
+bvid = np.array([np.array([bvd[0][0]-r1, bvd[0][1]-r1, bvd[0][2]-r1]), np.array([bvd[1][0]+r1, bvd[1][1]+r1, bvd[1][2]+r1])])
+bvin = np.array([np.array([bvn[0][0]-r1, bvn[0][1]-r1, bvn[0][2]-r1]), np.array([bvn[1][0]+r1, bvn[1][1]+r1, bvn[1][2]+r1])])
+
+volumes_d, inds_vols_d= get_box(all_volumes, all_centroids, bvd, True)
+
+# volumes com vazao prescrita
+volumes_n, inds_vols_n = get_box(all_volumes, all_centroids, bvn, True)
+
+# volumes finos por neumann
+volumes_fn = get_box(all_volumes, all_centroids, bvfn, False)
+
+# volumes finos por Dirichlet
+volumes_fd = get_box(all_volumes, all_centroids, bvfd, False)
+
+volumes_f=rng.unite(volumes_fn,volumes_fd)
+
+inds_pocos = inds_vols_d + inds_vols_n
+Cent_wels = all_centroids[inds_pocos]
+
+D1_tag = mb.tag_get_handle('d1')
+D2_tag = mb.tag_get_handle('d2')
+
+finos=list(rng.unite(rng.unite(volumes_d,volumes_n),volumes_f))
+
+vertices=mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), np.array([3]))
+vertices=rng.unite(vertices,mb.get_entities_by_type_and_tag(0, types.MBTET, np.array([D1_tag]), np.array([3])))
+all_vertex_centroids=np.array([mtu.get_average_position([v]) for v in vertices])
+
+# volumes intermediarios por neumann
+volumes_in = get_box(vertices, all_vertex_centroids, bvin, False)
+
+# volumes intermediarios por Dirichlet
+volumes_id = get_box(vertices, all_vertex_centroids, bvid, False)
+intermediarios=rng.unite(volumes_id,volumes_in)
+
+L1_ID_tag=mb.tag_get_handle("l1_ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
+L2_ID_tag=mb.tag_get_handle("l2_ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
+L3_ID_tag=mb.tag_get_handle("NIVEL_ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
+
+
+
+internos=mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), np.array([0]))
+faces=mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), np.array([1]))
+arestas=mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), np.array([2]))
+vertices=mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), np.array([3]))

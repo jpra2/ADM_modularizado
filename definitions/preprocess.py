@@ -321,6 +321,122 @@ t1 = time.time()
 print('tempo faces contorno')
 print(t1-t0)
 
+for meshset in meshsets_nv2:
+    nc = MM.mb.tag_get_data(primal_id_tag2, meshset, flat=True)[0]
+    elems = MM.mb.get_entities_by_handle(meshset)
+    MM.mb.tag_set_data(fine_to_primal2_classic_tag, elems, np.repeat(nc, len(elems)))
+
+internos=MM.mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), np.array([0]))
+faces=MM.mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), np.array([1]))
+arestas=MM.mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), np.array([2]))
+vertices=MM.mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), np.array([3]))
+
+MM.mb.tag_set_data(fine_to_primal1_classic_tag,vertices,np.arange(0,len(vertices)))
+
+ni=len(internos)
+nf=len(faces)
+na=len(arestas)
+nv=len(vertices)
+
+nni=ni
+nnf=nni+nf
+nne=nnf+na
+nnv=nne+nv
+l_elems=[internos,faces,arestas,vertices]
+l_ids=[0,nni,nnf,nne,nnv]
+for i, elems in enumerate(l_elems):
+    MM.mb.tag_set_data(MM.ID_reordenado_tag,elems,np.arange(l_ids[i],l_ids[i+1]))
+
+def add_topology(conj_vols,tag_local,lista):
+    all_fac=np.uint64(MM.mtu.get_bridge_adjacencies(conj_vols, 2 ,2))
+    all_int_fac=np.uint64([face for face in all_fac if len(MM.mb.get_adjacencies(face, 3))==2])
+    adjs=np.array([MM.mb.get_adjacencies(face, 3) for face in all_int_fac])
+    adjs1=MM.mb.tag_get_data(tag_local,np.array(adjs[:,0]),flat=True)
+    adjs2=MM.mb.tag_get_data(tag_local,np.array(adjs[:,1]),flat=True)
+    adjsg1=MM.mb.tag_get_data(MM.ID_reordenado_tag,np.array(adjs[:,0]),flat=True)
+    adjsg2=MM.mb.tag_get_data(MM.ID_reordenado_tag,np.array(adjs[:,1]),flat=True)
+    Gids=MM.mb.tag_get_data(MM.ID_reordenado_tag,conj_vols,flat=True)
+    lista.append(Gids)
+    lista.append(all_int_fac)
+    lista.append(adjs1)
+    lista.append(adjs2)
+    lista.append(adjsg1)
+    lista.append(adjsg2)
+
+t0=time.time()
+local_id_int_tag = MM.mb.tag_get_handle("local_id_internos", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
+local_id_fac_tag = MM.mb.tag_get_handle("local_fac_internos", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
+MM.mb.tag_set_data(local_id_int_tag, MM.all_volumes,np.repeat(len(MM.all_volumes)+1,len(MM.all_volumes)))
+MM.mb.tag_set_data(local_id_fac_tag, MM.all_volumes,np.repeat(len(MM.all_volumes)+1,len(MM.all_volumes)))
+sgids=0
+li=[]
+ci=[]
+di=[]
+cont=0
+
+intern_adjs_by_dual=[]
+faces_adjs_by_dual=[]
+dual_1_meshset=MM.mb.create_meshset()
+
+D_x=max(Lx-int(Lx/l1[0])*l1[0],Lx-int(Lx/l2[0])*l2[0])
+D_y=max(Ly-int(Ly/l1[1])*l1[1],Ly-int(Ly/l2[1])*l2[1])
+D_z=max(Lz-int(Lz/l1[2])*l1[2],Lz-int(Lz/l2[2])*l2[2])
+for i in range(len(lxd1)-1):
+    x0=lxd1[i]
+    x1=lxd1[i+1]
+    for j in range(len(lyd1)-1):
+        y0=lyd1[j]
+        y1=lyd1[j+1]
+        for k in range(len(lzd1)-1):
+            z0=lzd1[k]
+            z1=lzd1[k+1]
+            tb=time.time()
+            box_dual_1=np.array([[x0-0.01,y0-0.01,z0-0.01],[x1+0.01,y1+0.01,z1+0.01]])
+            vols=get_box(MM.all_volumes, all_centroids, box_dual_1, False)
+            tipo=MM.mb.tag_get_data(D1_tag,vols,flat=True)
+            inter=rng.Range(np.array(vols)[np.where(tipo==0)[0]])
+
+            MM.mb.tag_set_data(local_id_int_tag,inter,range(len(inter)))
+            add_topology(inter,local_id_int_tag,intern_adjs_by_dual)
+
+
+            fac=rng.Range(np.array(vols)[np.where(tipo==1)[0]])
+            fac_centroids=np.array([MM.mtu.get_average_position([f]) for f in fac])
+
+            box_faces_x=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x0+lx/2,y1+ly/2,z1+lz/2]])
+            box_faces_y=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y0+ly/2,z1+lz/2]])
+            box_faces_z=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z0+lz/2]])
+
+            faces_x=get_box(fac, fac_centroids, box_faces_x, False)
+
+            faces_y=get_box(fac, fac_centroids, box_faces_y, False)
+            f1=rng.unite(faces_x,faces_y)
+
+            faces_z=get_box(fac, fac_centroids, box_faces_z, False)
+            f1=rng.unite(f1,faces_z)
+
+            if i==len(lxd1)-2:
+                box_faces_x2=np.array([[x1-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
+                faces_x2=get_box(fac, fac_centroids, box_faces_x2, False)
+                f1=rng.unite(f1,faces_x2)
+
+            if j==len(lyd1)-2:
+                box_faces_y2=np.array([[x0-lx/2,y1-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
+                faces_y2=get_box(fac, fac_centroids, box_faces_y2, False)
+                f1=rng.unite(f1,faces_y2)
+
+            if k==len(lzd1)-2:
+                box_faces_z2=np.array([[x0-lx/2,y0-ly/2,z1-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
+                faces_z2=get_box(fac, fac_centroids, box_faces_z2, False)
+                f1=rng.unite(f1,faces_z2)
+
+            sgids+=len(f1)
+            MM.mb.tag_set_data(local_id_fac_tag,f1,range(len(f1)))
+            add_topology(f1,local_id_fac_tag,faces_adjs_by_dual)
+
+print(time.time()-t1,"criou meshset")
+
+print('saiu preprocess')
 ext_h5m = input_file + '_dual_primal.h5m'
 ext_vtk = input_file + '_dual_primal.vtk'
 MM.mb.write_file(ext_h5m)

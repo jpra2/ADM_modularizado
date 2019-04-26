@@ -1137,6 +1137,8 @@ li=[]
 ci=[]
 di=[]
 cont=0
+
+import pdb; pdb.set_trace()
 intern_adjs_by_dual=[]
 faces_adjs_by_dual=[]
 dual_1_meshset=M1.mb.create_meshset()
@@ -1299,6 +1301,8 @@ def solve_block_matrix(topology,pos_0):
         lgp.append(Gids-pos_0)
         tc+=time.time()-t3
         c0+=len(Gids)
+
+
     return(lgp,cgp,dgp,fl,fc,fd,t_invaii,st,ts,ta,tc)
 
 lgp,cgp,dgp,fl,fc,fd,t_invaii,st,ts,ta,tc=solve_block_matrix(intern_adjs_by_dual,0)
