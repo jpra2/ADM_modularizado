@@ -1,6 +1,6 @@
 input_file: '28x28x30'
 
-gravity: True
+gravity: False
 # adicionar o efeito da gravidade
 MPFA: False
 # estruturado ou nao
@@ -36,8 +36,8 @@ Wells_structured:
   P2:
     id: 'P1'
     type_region: 'box'
-    region1: [260.0, 270.0, 0.0]
-    region2: [280.0, 280.0, 60.0]
+    region1: [540.0, 270.0, 0.0]
+    region2: [560.0, 280.0, 60.0]
     type_prescription: 'dirichlet'
     value: 100.0
     type_well: 'producer'

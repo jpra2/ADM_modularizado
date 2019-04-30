@@ -861,6 +861,8 @@ class OtherUtils:
         #internos
         Aii = Tmod[0:nni, 0:nni]
         Aif = Tmod[0:nni, nni:nnf]
+        Aie = Tmod[0:nni, nnf:nne]
+        Aiv = Tmod[0:nni, nne:nnv]
 
         #faces
         Aff = Tmod[nni:nnf, nni:nnf]

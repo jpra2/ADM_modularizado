@@ -10,7 +10,8 @@ from definitions.functions1 import *
 from utils.prolongation import *
 from utils.others_utils import OtherUtils as oth
 import sympy
-from scipy.sparse import csc_matrix
+from scipy.sparse import csc_matrix, vstack, find, linalg
+import scipy
 
 parent_dir = os.path.dirname(os.path.abspath(__file__))
 parent_parent_dir = os.path.dirname(parent_dir)
@@ -38,8 +39,8 @@ root_set = mb.get_root_set()
 mtu = topo_util.MeshTopoUtil(mb)
 mb.load_file(mesh_file)
 
-intern_adjs_by_dual=np.load('intern_adjs_by_dual.npy')
-faces_adjs_by_dual=np.load('faces_adjs_by_dual.npy')
+intern_adjs_by_dual = np.load('intern_adjs_by_dual.npy')
+faces_adjs_by_dual = np.load('faces_adjs_by_dual.npy')
 
 all_nodes, all_edges, all_faces, all_volumes = utpy.get_all_entities(mb)
 cent_tag = mb.tag_get_handle('CENT')
@@ -100,7 +101,7 @@ verts = mb.get_connectivity(all_volumes)
 coords = mb.get_coords(verts).reshape([len(verts), 3])
 mins = coords.min(axis=0)
 maxs = coords.max(axis=0)
-Ltotal = maxs - mins + 1e-9 ### correcao de ponto flutuante
+Ltotal = maxs - mins + 1e-9  # correcao de ponto flutuante
 Lx, Ly, Lz = Ltotal
 
 gravity = data_loaded['gravity']
@@ -177,7 +178,7 @@ volumes_fn = get_box(all_volumes, all_centroids, bvfn, False)
 # volumes finos por Dirichlet
 volumes_fd = get_box(all_volumes, all_centroids, bvfd, False)
 
-volumes_f=rng.unite(volumes_fn,volumes_fd)
+volumes_f = rng.unite(volumes_fn, volumes_fd)
 
 inds_pocos = inds_vols_d + inds_vols_n
 Cent_wels = all_centroids[inds_pocos]
@@ -185,11 +186,11 @@ Cent_wels = all_centroids[inds_pocos]
 D1_tag = mb.tag_get_handle('d1')
 D2_tag = mb.tag_get_handle('d2')
 
-finos=list(rng.unite(rng.unite(volumes_d,volumes_n),volumes_f))
+finos = list(rng.unite(rng.unite(volumes_d, volumes_n), volumes_f))
 
-vertices=mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), np.array([3]))
-vertices=rng.unite(vertices,mb.get_entities_by_type_and_tag(0, types.MBTET, np.array([D1_tag]), np.array([3])))
-all_vertex_centroids=np.array([mtu.get_average_position([v]) for v in vertices])
+vertices = mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), np.array([3]))
+vertices = rng.unite(vertices,mb.get_entities_by_type_and_tag(0, types.MBTET, np.array([D1_tag]), np.array([3])))
+all_vertex_centroids = np.array([mtu.get_average_position([v]) for v in vertices])
 
 # volumes intermediarios por neumann
 volumes_in = get_box(vertices, all_vertex_centroids, bvin, False)
@@ -413,6 +414,8 @@ Adjs = np.array([np.array(mb.get_adjacencies(face, 3)) for face in faces_in])
 all_ids_reord = mb.tag_get_data(ID_reordenado_tag, all_volumes, flat=True)
 map_volumes = dict(zip(all_volumes, range(len(all_volumes))))
 
+tempo0_ADM=time.time()
+
 lines_tf = []
 cols_tf = []
 data_tf = []
@@ -481,6 +484,7 @@ ids_arestas_slin_m0=np.nonzero(As['Aev'].sum(axis=1))[0]
 Aev = As['Aev']
 Ivv = As['Ivv']
 Aif = As['Aif']
+Afe = As['Afe']
 invAee=lu_inv4(As['Aee'].tocsc(),ids_arestas_slin_m0)
 M2=-invAee*Aev
 PAD=vstack([M2,Ivv])
@@ -496,6 +500,7 @@ print("get_OP_AMS", time.time()-ta1)
 del M3
 
 ids_1=mb.tag_get_data(L1_ID_tag,vertices,flat=True)
+fine_to_primal1_classic_tag = mb.tag_get_handle('FINE_TO_PRIMAL1_CLASSIC')
 ids_class=mb.tag_get_data(fine_to_primal1_classic_tag,vertices,flat=True)
 t0=time.time()
 
@@ -562,6 +567,8 @@ fac=mb.get_entities_by_type_and_tag(v, types.MBHEX, np.array([D2_tag]), np.array
 are=mb.get_entities_by_type_and_tag(v, types.MBHEX, np.array([D2_tag]), np.array([2]))
 ver=mb.get_entities_by_type_and_tag(v, types.MBHEX, np.array([D2_tag]), np.array([3]))
 
+fine_to_primal2_classic_tag = mb.tag_get_handle('FINE_TO_PRIMAL2_CLASSIC')
+
 mb.tag_set_data(fine_to_primal2_classic_tag, ver, np.arange(len(ver)))
 
 lines=[]
@@ -623,7 +630,27 @@ na=nare
 nv=nver
 wirebasket_numbers_nv2 = [ni, nf, na, nv]
 
-As = oth.get_Tmod_by_sparse_wirebasket_matrix(W_AMS, wirebasket_numbers_nv2)
+Aii=W_AMS[0:ni,0:ni]
+Aif=W_AMS[0:ni,ni:ni+nf]
+Aie=W_AMS[0:ni,ni+nf:ni+nf+na]
+Aiv=W_AMS[0:ni,ni+nf+na:ni+nf+na+nv]
+
+lines=[]
+cols=[]
+data=[]
+if MPFA_NO_NIVEL_2 ==False:
+    for i in range(ni):
+        lines.append(i)
+        cols.append(i)
+        data.append(float(Aie.sum(axis=1)[i])+float(Aiv.sum(axis=1)[i]))
+    S=csc_matrix((data,(lines,cols)),shape=(ni,ni))
+    Aii += S
+    del(S)
+
+Afi=W_AMS[ni:ni+nf,0:ni]
+Aff=W_AMS[ni:ni+nf,ni:ni+nf]
+Afe=W_AMS[ni:ni+nf,ni+nf:ni+nf+na]
+Afv=W_AMS[ni:ni+nf,ni+nf+na:ni+nf+na+nv]
 
 lines=[]
 cols=[]
@@ -658,29 +685,27 @@ for i in range(na):
 S=csc_matrix((data,(lines,cols)),shape=(na,na))
 Aee += S
 
-Ivv=scipy.sparse.identity(nv)
-invAee=lu_inv2(Aee)
-M2=-csc_matrix(invAee)*Aev
-P2=vstack([M2,Ivv])
+Ivv = scipy.sparse.identity(nv)
+invAee = lu_inv2(Aee)
+M2 = -csc_matrix(invAee)*Aev
+P2 = vstack([M2, Ivv])
 
-invAff=lu_inv2(Aff)
+invAff = lu_inv2(Aff)
 
 if MPFA_NO_NIVEL_2:
-    M3=-invAff*Afe*M2-invAff*Afv
-    P2=vstack([M3,P2])
+    M3 = -invAff*Afe*M2-invAff*Afv
+    P2 = vstack([M3, P2])
 else:
-    Mf=-invAff*Afe*M2
-    P2=vstack([Mf,P2])
-invAii=lu_inv2(Aii)
+    Mf = -invAff*Afe*M2
+    P2 = vstack([Mf, P2])
+invAii = lu_inv2(Aii)
 if MPFA_NO_NIVEL_2:
-    M3=invAii*(-Aif*M3+Aie*invAee*Aev-Aiv)
-    P2=vstack([M3,P2])
+    M3 = invAii*(-Aif*M3+Aie*invAee*Aev-Aiv)
+    P2 = vstack([M3, P2])
 else:
-    P2=vstack([-invAii*Aif*Mf,P2])
+    P2 = vstack([-invAii*Aif*Mf, P2])
 
-
-
-COL_TO_ADM_2={}
+COL_TO_ADM_2 = {}
 # ver é o meshset dos vértices da malha dual grossa
 for i in range(nv):
     v=ver[i]
@@ -773,10 +798,11 @@ OP2=P2.copy()
 ta2=time.time()
 vm=mb.create_meshset()
 mb.add_entities(vm,vertices)
-v_nivel_0=mb.get_entities_by_type_and_tag(vm, types.MBHEX, np.array([L3_ID_tag]), np.array([3]))
+v_nivel_0=mb.get_entities_by_type_and_tag(vm, types.MBHEX, np.array([L3_ID_tag]), np.array([1]))
 v_nivel_1=mb.get_entities_by_type_and_tag(vm, types.MBHEX, np.array([L3_ID_tag]), np.array([2]))
 v_n0e1=rng.unite(v_nivel_0,v_nivel_1)
 ID_class=mb.tag_get_data(fine_to_primal1_classic_tag,v_n0e1, flat=True)
+import pdb; pdb.set_trace()
 OP2[ID_class]=csc_matrix((1,OP2.shape[1]))
 
 nivel_0=mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([L3_ID_tag]), np.array([1]))
@@ -819,7 +845,7 @@ b[ID_global] = values_d
 
 ########################## apagar para usar pressão-vazão
 
-neuman_tag - mb.tag_get_handle('Q')
+neuman_tag = mb.tag_get_handle('Q')
 ID_globaln=mb.tag_get_data(ID_reordenado_tag,volumes_n, flat=True)
 values_n = mb.tag_get_data(neuman_tag, volumes_n, flat=True)
 if len(ID_globaln) > 0:
@@ -870,7 +896,7 @@ SOL_TPFA = np.load('SOL_TPFA.npy')'''
 print("resolvendo TPFA")
 t0=time.time()
 SOL_TPFA=linalg.spsolve(T,b)
-print("resolveu TPFA: ",time.time()-t0+t_assembly,t_assembly)
+print("resolveu TPFA: ")
 np.save('SOL_TPFA.npy', SOL_TPFA)
 
 
