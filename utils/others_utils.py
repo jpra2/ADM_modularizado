@@ -843,3 +843,49 @@ class OtherUtils:
         As['Ivv'] = Ivv
 
         return As
+
+    @staticmethod
+    def get_As_by_sparse_wirebasket_matrix(Tf_wire, wirebasket_numbers):
+
+        Tmod = Tf_wire.copy().tolil()
+        ni = wirebasket_numbers[0]
+        nf = wirebasket_numbers[1]
+        ne = wirebasket_numbers[2]
+        nv = wirebasket_numbers[3]
+
+        nni = wirebasket_numbers[0]
+        nnf = wirebasket_numbers[1] + nni
+        nne = wirebasket_numbers[2] + nnf
+        nnv = wirebasket_numbers[3] + nne
+
+        #internos
+        Aii = Tmod[0:nni, 0:nni]
+        Aif = Tmod[0:nni, nni:nnf]
+
+        #faces
+        Aff = Tmod[nni:nnf, nni:nnf]
+        Afe = Tmod[nni:nnf, nnf:nne]
+        soma = Aif.transpose().sum(axis=1)
+        d1 = np.matrix(Aff.diagonal()).reshape([nf, 1])
+        d1 += soma
+        Aff.setdiag(d1)
+
+        #arestas
+        Aee = Tmod[nnf:nne, nnf:nne]
+        Aev = Tmod[nnf:nne, nne:nnv]
+        soma = Afe.transpose().sum(axis=1)
+        d1 = np.matrix(Aee.diagonal()).reshape([ne, 1])
+        d1 += soma
+        Aee.setdiag(d1)
+        Ivv = sp.identity(nv)
+
+        As = {}
+        As['Aii'] = Aii
+        As['Aif'] = Aif
+        As['Aff'] = Aff
+        As['Afe'] = Afe
+        As['Aee'] = Aee
+        As['Aev'] = Aev
+        As['Ivv'] = Ivv
+
+        return As

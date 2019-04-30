@@ -356,7 +356,7 @@ for meshset in meshsets_nv1:
 v=MM.mb.create_meshset()
 MM.mb.add_entities(v,vertices)
 ver=MM.mb.get_entities_by_type_and_tag(v, types.MBHEX, np.array([D2_tag]), np.array([3]))
-mb.tag_set_data(fine_to_primal2_classic_tag, ver, np.arange(len(ver)))
+MM.mb.tag_set_data(fine_to_primal2_classic_tag, ver, np.arange(len(ver)))
 
 for meshset in meshsets_nv2: #print(rng.intersect(M1.mb.get_entities_by_handle(meshset), ver))
     elems = MM.mb.get_entities_by_handle(meshset)
