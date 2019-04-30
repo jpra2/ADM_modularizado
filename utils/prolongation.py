@@ -1,5 +1,12 @@
+import numpy as np
+from pymoab import core, types, rng, topo_util
+from scipy.sparse import linalg, csc_matrix, hstack, vstack
+import time
 
-def solve_block_matrix(topology,pos_0):
+__all__ = ['solve_block_matrix']
+
+
+def solve_block_matrix(topology,pos_0, mb, k_eq_tag):
     lgp=[]
     cgp=[]
     dgp=[]
@@ -28,7 +35,7 @@ def solve_block_matrix(topology,pos_0):
             all_faces_topo=np.delete(all_faces_topo,inds_elim)
             ADJs1=np.delete(ADJs1,inds_elim)
             ADJs2=np.delete(ADJs2,inds_elim)
-        ks_all=np.array(M1.mb.tag_get_data(M1.k_eq_tag,np.array(all_faces_topo),flat=True))
+        ks_all=np.array(mb.tag_get_data(k_eq_tag,np.array(all_faces_topo),flat=True))
         ts+=time.time()-t1
         t2=time.time()
         int1=np.where(ADJs1<len(Gids))

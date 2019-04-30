@@ -26,6 +26,7 @@ os.makedirs(flying_dir)
 os.makedirs(mono_dir)
 os.makedirs(bif_dir)
 ################################
+tags_criadas_aqui = []
 
 os.chdir(input_dir)
 with open("inputs.yaml", 'r') as stream:
@@ -145,17 +146,24 @@ print("definiu planos do nível 2")
 
 t0=time.time()
 L2_meshset=MM.mb.create_meshset()       # root Meshset
+l2_meshset_tag = MM.mb.tag_get_handle('L2_MESHSET', 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
+MM.mb.tag_set_data(l2_meshset_tag, 0, L2_meshset)
+tags_criadas_aqui.append('L2_MESHSET')
 
 D1_tag=MM.mb.tag_get_handle("d1", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
 D2_tag=MM.mb.tag_get_handle("d2", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
 ##########################################################################################
+tags_criadas_aqui += ['d1', 'd2']
 
 fine_to_primal1_classic_tag = MM.mb.tag_get_handle("FINE_TO_PRIMAL1_CLASSIC", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
 fine_to_primal2_classic_tag = MM.mb.tag_get_handle("FINE_TO_PRIMAL2_CLASSIC", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
 AV_meshset=MM.mb.create_meshset()
+tags_criadas_aqui += ['FINE_TO_PRIMAL1_CLASSIC', 'FINE_TO_PRIMAL2_CLASSIC']
 
 primal_id_tag1 = MM.mb.tag_get_handle("PRIMAL_ID_1", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
 primal_id_tag2 = MM.mb.tag_get_handle("PRIMAL_ID_2", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
+tags_criadas_aqui += ['PRIMAL_ID_1', 'PRIMAL_ID_2']
+
 nc1=0
 nc2=0
 
@@ -317,6 +325,7 @@ for i in range(n_levels):
     # names_tags_criadas_aqui.append(name_tag_faces_boundary_meshsets + str(i+2))
     tag_boundary = MM.mb.tag_get_handle(name_tag_faces_boundary_meshsets + str(i+2), 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
     utpy.set_faces_in_boundary_by_meshsets(MM.mb, MM.mtu, meshsets, tag_boundary)
+    tags_criadas_aqui.append(name_tag_faces_boundary_meshsets + str(i+2))
 t1 = time.time()
 print('tempo faces contorno')
 print(t1-t0)
@@ -368,6 +377,7 @@ local_id_int_tag = MM.mb.tag_get_handle("local_id_internos", 1, types.MB_TYPE_IN
 local_id_fac_tag = MM.mb.tag_get_handle("local_fac_internos", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
 MM.mb.tag_set_data(local_id_int_tag, MM.all_volumes,np.repeat(len(MM.all_volumes)+1,len(MM.all_volumes)))
 MM.mb.tag_set_data(local_id_fac_tag, MM.all_volumes,np.repeat(len(MM.all_volumes)+1,len(MM.all_volumes)))
+tags_criadas_aqui += ['local_id_internos', 'local_fac_internos']
 sgids=0
 li=[]
 ci=[]
@@ -377,6 +387,10 @@ cont=0
 intern_adjs_by_dual=[]
 faces_adjs_by_dual=[]
 dual_1_meshset=MM.mb.create_meshset()
+tag_dual_1_meshset = MM.mb.tag_get_handle('DUAL_1_MESHSET', 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
+MM.mb.tag_set_data(tag_dual_1_meshset, 0, dual_1_meshset)
+tags_criadas_aqui.append('DUAL_1_MESHSET')
+
 
 D_x=max(Lx-int(Lx/l1[0])*l1[0],Lx-int(Lx/l2[0])*l2[0])
 D_y=max(Ly-int(Ly/l1[1])*l1[1],Ly-int(Ly/l2[1])*l2[1])
@@ -435,6 +449,10 @@ for i in range(len(lxd1)-1):
             add_topology(f1,local_id_fac_tag,faces_adjs_by_dual)
 
 print(time.time()-t1,"criou meshset")
+
+
+np.save('intern_adjs_by_dual', intern_adjs_by_dual)
+np.save('faces_adjs_by_dual', faces_adjs_by_dual)
 
 print('saiu preprocess')
 ext_h5m = input_file + '_dual_primal.h5m'

@@ -357,7 +357,8 @@ def get_box(conjunto, all_centroids, limites, return_inds):
 
 #--------------Início dos parâmetros de entrada-------------------
 # M1= MeshManager('27x27x27.msh')          # Objeto que armazenará as informações da malha
-M1= MeshManager('30x110x85.msh')          # Objeto que armazenará as informações da malha
+# M1= MeshManager('30x110x85.msh')          # Objeto que armazenará as informações da malha
+M1= MeshManager('28x28x30.msh')          # Objeto que armazenará as informações da malha
 all_volumes=M1.all_volumes
 
 # Ci = n: Ci -> Razão de engrossamento ni nível i (em relação ao nível i-1),
@@ -366,13 +367,30 @@ all_volumes=M1.all_volumes
 M1.all_centroids=np.array([M1.mtu.get_average_position([v]) for v in all_volumes])
 all_centroids = M1.all_centroids
 
-nx=30
-ny=110
-nz=85
+verts = M1.mb.get_connectivity(all_volumes[0])
+coords = M1.mb.get_coords(verts).reshape([len(verts), 3])
+mins = coords.min(axis=0)
+maxs = coords.max(axis=0)
+dx0, dy0, dz0 = maxs - mins
+lx, ly, lz = maxs - mins
 
-lx=20
-ly=10
-lz=2
+verts = M1.mb.get_connectivity(all_volumes)
+coords = M1.mb.get_coords(verts).reshape([len(verts), 3])
+mins = coords.min(axis=0)
+maxs = coords.max(axis=0)
+Ltotal = maxs - mins + 1e-9 ### correcao de ponto flutuante
+Lx, Ly, Lz = Ltotal
+
+# nx, ny, nz = (Ltotal/(maxs - mins)).astype(np.int32)
+nx, ny, nz = (Ltotal/(np.array([lx, ly, lz])) + 1e-9).astype(np.int32)
+
+# nx=30
+# ny=110
+# nz=85
+#
+# lx=20
+# ly=10
+# lz=2
 
 x1=nx*lx
 y1=ny*ly
@@ -380,7 +398,7 @@ z1=nz*lz
 # Distância, em relação ao poço, até onde se usa malha fina
 r0 = 1
 # Distância, em relação ao poço, até onde se usa malha intermediária
-r1 = 5
+r1 = 1
 '''
 bvd = np.array([np.array([x1-lx, 0.0, 0.0]), np.array([x1, y1, lz])])
 bvn = np.array([np.array([0.0, 0.0, z1-lz]), np.array([lx, y1, z1])])
@@ -416,8 +434,11 @@ Cent_wels = all_centroids[inds_pocos]
 
 # Ci = n: Ci -> Razão de engrossamento ni nível i (em relação ao nível i-1),
 # n -> número de blocos em cada uma das 3 direções (mesmo número em todas)
-l1=[5*lx,5*ly,5*lz]
-l2=[15*lx,15*ly,20*lz]
+# l1=[5*lx,5*ly,5*lz]
+# l2=[15*lx,15*ly,20*lz]
+
+l1=[60,30,6]
+l2=[180,90,18]
 # Posição aproximada de cada completação
 
 
@@ -1138,7 +1159,6 @@ ci=[]
 di=[]
 cont=0
 
-import pdb; pdb.set_trace()
 intern_adjs_by_dual=[]
 faces_adjs_by_dual=[]
 dual_1_meshset=M1.mb.create_meshset()
@@ -1201,10 +1221,8 @@ for i in range(len(lxd1)-1):
 
 print(time.time()-t1,"criou meshset")
 
-
 t_invaii=time.time()
 meshsets_duais=M1.mb.get_child_meshsets(dual_1_meshset)
-
 def solve_block_matrix(topology,pos_0):
     lgp=[]
     cgp=[]

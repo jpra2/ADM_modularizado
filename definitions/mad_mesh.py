@@ -7,6 +7,7 @@ import yaml
 import sys
 from utils import pymoab_utils as utpy
 from definitions.functions1 import *
+from utils.prolongation import *
 
 parent_dir = os.path.dirname(os.path.abspath(__file__))
 parent_parent_dir = os.path.dirname(parent_dir)
@@ -15,6 +16,8 @@ flying_dir = os.path.join(parent_parent_dir, 'flying')
 utils_dir = os.path.join(parent_parent_dir, 'utils')
 mono_dir = os.path.join(flying_dir, 'monofasico')
 bif_dir = os.path.join(flying_dir, 'bifasico')
+
+tags_criadas_aqui = []
 
 os.chdir(input_dir)
 with open("inputs.yaml", 'r') as stream:
@@ -32,6 +35,9 @@ root_set = mb.get_root_set()
 mtu = topo_util.MeshTopoUtil(mb)
 mb.load_file(mesh_file)
 
+intern_adjs_by_dual=np.load('intern_adjs_by_dual.npy')
+faces_adjs_by_dual=np.load('faces_adjs_by_dual.npy')
+
 all_nodes, all_edges, all_faces, all_volumes = utpy.get_all_entities(mb)
 cent_tag = mb.tag_get_handle('CENT')
 all_centroids = mb.tag_get_data(cent_tag, all_volumes)
@@ -39,6 +45,7 @@ press_value_tag = mb.tag_get_handle('P')
 vazao_value_tag = mb.tag_get_handle('Q')
 wells_injector_tag = mb.tag_get_handle('WELLS_INJECTOR', 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
 wells_producer_tag = mb.tag_get_handle('WELLS_PRODUCER', 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
+tags_criadas_aqui += ['WELLS_INJECTOR', 'WELLS_PRODUCER']
 
 wells_injector = mb.create_meshset()
 wells_producer = mb.create_meshset()
@@ -75,6 +82,8 @@ if bifasico:
     dfds_tag = mb.tag_get_handle('DFDS', 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
     mi = mi = data_loaded['dados_monofasico']['mi']
     gama = data_loaded['dados_monofasico']['gama']
+    tags_criadas_aqui += ['SAT', 'FW', 'LAMB_W', 'LAMB_O', 'LBT', 'TOTAL_FLUX', 'FLUX_W', 'MOBI_IN_FACES', 'MOBI_W_IN_FACES',
+                          'FLUX_IN_FACES', 'LOOPS', 'FW_IN_FACES', 'DFDS']
     ############################################################
 
 else:
@@ -189,10 +198,21 @@ intermediarios=rng.unite(volumes_id,volumes_in)
 L1_ID_tag=mb.tag_get_handle("l1_ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
 L2_ID_tag=mb.tag_get_handle("l2_ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
 L3_ID_tag=mb.tag_get_handle("NIVEL_ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
-
-
+tags_criadas_aqui += ['l1_ID', 'l2_ID', 'NIVEL_ID']
 
 internos=mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), np.array([0]))
 faces=mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), np.array([1]))
 arestas=mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), np.array([2]))
 vertices=mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), np.array([3]))
+
+tag_dual_1_meshset = mb.tag_get_handle('DUAL_1_MESHSET')
+dual_1_meshset = mb.tag_get_data(tag_dual_1_meshset, 0, flat=True)[0]
+meshsets_duais=mb.get_child_meshsets(dual_1_meshset)
+k_eq_tag = mb.tag_get_handle("K_EQ")
+
+invbAii=solve_block_matrix(intern_adjs_by_dual,0, mb, k_eq_tag)
+
+import pdb; pdb.set_trace()
+
+print('saiu mad_mesh')
+import pdb; pdb.set_trace()
