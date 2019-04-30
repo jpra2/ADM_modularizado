@@ -1221,6 +1221,12 @@ for i in range(len(lxd1)-1):
 
 print(time.time()-t1,"criou meshset")
 
+# np.save('intern_adjs_by_dual', intern_adjs_by_dual)
+# np.save('faces_adjs_by_dual', faces_adjs_by_dual)
+#
+# intern_adjs_by_dual = np.load('intern_adjs_by_dual.npy')
+# faces_adjs_by_dual = np.load('faces_adjs_by_dual.npy')
+
 t_invaii=time.time()
 meshsets_duais=M1.mb.get_child_meshsets(dual_1_meshset)
 def solve_block_matrix(topology,pos_0):
@@ -1334,6 +1340,7 @@ cgp=range(ni)
 dgp=np.ones(len(lgp))
 permut_g=csc_matrix((dgp,(lgp,cgp)),shape=(ni,ni))
 invbAii=permut_g*m_loc*permut_g.transpose()
+import pdb; pdb.set_trace()
 print("inversão de Aii",time.time()-t_invaii,st,ts,ta,tc)
 
 t_invaff=time.time()
@@ -1852,15 +1859,16 @@ IDs_internos_0_locais=IDs_internos_0
 
 IDs_arestas_1_locais=np.setdiff1d(range(na),IDs_arestas_0_locais)
 
-IDs_faces_1_locais=np.setdiff1d(range(nf),IDs_faces_0_locais)
-IDs_internos_1_locais=np.setdiff1d(range(ni),IDs_internos_0_locais)
+# IDs_faces_1_locais=np.setdiff1d(range(nf),IDs_faces_0_locais)
+# IDs_internos_1_locais=np.setdiff1d(range(ni),IDs_internos_0_locais)
 
 
 ids_arestas=np.where(Aev.sum(axis=1)==0)[0]
 ids_arestas_slin_m0=np.setdiff1d(range(na),ids_arestas)
+np.nonzero()
 
-ids_faces=np.where(Afe.sum(axis=1)==0)[0]
-ids_faces_slin_m0=np.setdiff1d(range(nf),ids_faces)
+# ids_faces=np.where(Afe.sum(axis=1)==0)[0]
+# ids_faces_slin_m0=np.setdiff1d(range(nf),ids_faces)
 
 ids_internos=np.where(Aif.sum(axis=1)==0)[0]
 ids_internos_slin_m0=np.setdiff1d(range(ni),ids_internos)

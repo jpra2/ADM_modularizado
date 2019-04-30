@@ -1,12 +1,13 @@
 import numpy as np
 from pymoab import core, types, rng, topo_util
-from scipy.sparse import linalg, csc_matrix, hstack, vstack
+from scipy.sparse import linalg, csc_matrix, hstack, vstack, find
 import time
+from definitions.functions1 import *
 
 __all__ = ['solve_block_matrix']
 
 
-def solve_block_matrix(topology,pos_0, mb, k_eq_tag):
+def solve_block_matrix(topology,pos_0, mb, k_eq_tag, n0):
     lgp=[]
     cgp=[]
     dgp=[]
@@ -92,6 +93,8 @@ def solve_block_matrix(topology,pos_0, mb, k_eq_tag):
         except:
             import pdb; pdb.set_trace()
 
+
+
         st+=time.time()-tinvert
 
         t3=time.time()
@@ -107,11 +110,11 @@ def solve_block_matrix(topology,pos_0, mb, k_eq_tag):
     fc=np.concatenate(np.array(fc))
     fd=np.concatenate(np.array(fd))
 
-    m_loc=csc_matrix((fd,(fl,fc)),shape=(ni,ni))
+    m_loc=csc_matrix((fd,(fl,fc)),shape=(n0,n0))
     lgp=np.concatenate(np.array(lgp))
-    cgp=range(ni)
+    cgp=range(n0)
     dgp=np.ones(len(lgp))
-    permut_g=csc_matrix((dgp,(lgp,cgp)),shape=(ni,ni))
+    permut_g=csc_matrix((dgp,(lgp,cgp)),shape=(n0,n0))
     invMatrix=permut_g*m_loc*permut_g.transpose()
 
     return(invMatrix)

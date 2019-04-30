@@ -3,7 +3,25 @@ from math import pi, sqrt
 from pymoab import core, types, rng, topo_util
 import time
 import os
+import yaml
 
+parent_dir = os.path.dirname(os.path.abspath(__file__))
+parent_parent_dir = os.path.dirname(parent_dir)
+input_dir = os.path.join(parent_parent_dir, 'input')
+flying_dir = os.path.join(parent_parent_dir, 'flying')
+utils_dir = os.path.join(parent_parent_dir, 'utils')
+mono_dir = os.path.join(flying_dir, 'monofasico')
+bif_dir = os.path.join(flying_dir, 'bifasico')
+
+tags_criadas_aqui = []
+
+os.chdir(input_dir)
+with open("inputs.yaml", 'r') as stream:
+        data_loaded = yaml.load(stream)
+        # data_loaded = yaml.load(stream, Loader=yaml.FullLoader)
+        # data_loaded = yaml.full_load(stream)
+
+os.chdir(flying_dir)
 
 class MeshManager:
     def __init__(self,mesh_file, dim=3):
@@ -50,9 +68,9 @@ class MeshManager:
         self.set_k_and_phi_structured_spe10()
         #self.set_information("PERM", self.all_volumes, 3)
         #self.get_boundary_faces()
-        self.gravity = False
-        self.gama = 10
-        self.mi = 1
+        self.gravity = data_loaded['gravity']
+        self.gama = data_loaded['dados_monofasico']['gama']
+        self.mi = data_loaded['dados_monofasico']['mi']
         t0=time.time()
         print('set área')
         self.get_kequiv_by_face_quad(self.all_faces)

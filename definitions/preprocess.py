@@ -342,6 +342,32 @@ vertices=MM.mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([D1_tag]), 
 
 MM.mb.tag_set_data(fine_to_primal1_classic_tag,vertices,np.arange(0,len(vertices)))
 
+for meshset in meshsets_nv1:
+    elems = MM.mb.get_entities_by_handle(meshset)
+    vert = rng.intersect(elems, vertices)
+    try:
+        nc = MM.mb.tag_get_data(fine_to_primal1_classic_tag, vert, flat=True)[0]
+    except:
+        import pdb; pdb.set_trace()
+    MM.mb.tag_set_data(fine_to_primal1_classic_tag, elems, np.repeat(nc, len(elems)))
+    MM.mb.tag_set_data(primal_id_tag1, meshset, nc)
+
+
+v=MM.mb.create_meshset()
+MM.mb.add_entities(v,vertices)
+ver=MM.mb.get_entities_by_type_and_tag(v, types.MBHEX, np.array([D2_tag]), np.array([3]))
+mb.tag_set_data(fine_to_primal2_classic_tag, ver, np.arange(len(ver)))
+
+for meshset in meshsets_nv2: #print(rng.intersect(M1.mb.get_entities_by_handle(meshset), ver))
+    elems = MM.mb.get_entities_by_handle(meshset)
+    vert = rng.intersect(elems, ver)
+    try:
+        nc = MM.mb.tag_get_data(fine_to_primal2_classic_tag, vert, flat=True)[0]
+    except:
+        import pdb; pdb.set_trace()
+    MM.mb.tag_set_data(fine_to_primal2_classic_tag, elems, np.repeat(nc, len(elems)))
+    MM.mb.tag_set_data(primal_id_tag2, meshset, nc)
+
 ni=len(internos)
 nf=len(faces)
 na=len(arestas)
@@ -454,8 +480,11 @@ print(time.time()-t1,"criou meshset")
 np.save('intern_adjs_by_dual', intern_adjs_by_dual)
 np.save('faces_adjs_by_dual', faces_adjs_by_dual)
 
-print('saiu preprocess')
+
+
 ext_h5m = input_file + '_dual_primal.h5m'
 ext_vtk = input_file + '_dual_primal.vtk'
 MM.mb.write_file(ext_h5m)
 MM.mb.write_file(ext_vtk, [AV_meshset])
+
+print('saiu preprocess')
