@@ -1,6 +1,6 @@
 import numpy as np
 from pymoab import core, types, rng, topo_util
-from scipy.sparse import linalg, csc_matrix, hstack, vstack
+from scipy.sparse import linalg, csc_matrix, hstack, vstack, csr_matrix
 import time
 
 
@@ -122,7 +122,10 @@ def lu_inv4(M,lines):
         l=lines
         c=range(len(l))
         d=np.repeat(1,L)
-        B=csr_matrix((d,(l,c)),shape=(M.shape[0],L))
+        try:
+            B=csr_matrix((d,(l,c)),shape=(M.shape[0],L))
+        except:
+            import pdb; pdb.set_trace()
         B=B.toarray()
         inversa=csc_matrix(LU.solve(B))
     else:

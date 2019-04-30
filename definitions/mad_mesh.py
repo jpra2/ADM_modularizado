@@ -407,8 +407,8 @@ faces_boundary = mb.tag_get_data(boundary_faces_tag, 0, flat=True)[0]
 faces_boundary = mb.get_entities_by_handle(faces_boundary)
 faces_in = rng.subtract(all_faces, faces_boundary)
 
-all_keqs = mb.tag_get_data(k_eq_tag, all_faces, flat=True)
-Adjs = [mb.get_adjacencies(face, 3) for face in faces_in]
+all_keqs = mb.tag_get_data(k_eq_tag, faces_in, flat=True)
+Adjs = np.array([np.array(mb.get_adjacencies(face, 3)) for face in faces_in])
 
 all_ids_reord = mb.tag_get_data(ID_reordenado_tag, all_volumes, flat=True)
 map_volumes = dict(zip(all_volumes, range(len(all_volumes))))
@@ -452,7 +452,6 @@ Tf.setdiag(d1)
 
 As = oth.get_Tmod_by_sparse_wirebasket_matrix(Tf, wirebasket_numbers)
 
-
 ta1=time.time()
 
 arestas_meshset=mb.create_meshset()
@@ -476,10 +475,13 @@ IDs_internos_0_locais=IDs_internos_0
 
 IDs_arestas_1_locais=np.setdiff1d(range(na),IDs_arestas_0_locais)
 
-ids_arestas_slin_m0=np.nonzero(As['Aev'].sum(axis=1))
+ids_arestas_slin_m0=np.nonzero(As['Aev'].sum(axis=1))[0]
 
-import pdb; pdb.set_trace()
-invAee=lu_inv4(As['Aee'],ids_arestas_slin_m0)
+
+Aev = As['Aev']
+Ivv = As['Ivv']
+Aif = As['Aif']
+invAee=lu_inv4(As['Aee'].tocsc(),ids_arestas_slin_m0)
 M2=-invAee*Aev
 PAD=vstack([M2,Ivv])
 
@@ -879,42 +881,23 @@ for i in range(len(SOL_TPFA)):
 erroADM1=np.zeros(len(SOL_TPFA))
 for i in range(len(SOL_TPFA)): erroADM1[i]=100*abs((SOL_TPFA[i]-SOL_ADM_fina_1[i])/SOL_TPFA[i])
 
-ERRO_tag=M1.mb.tag_get_handle("erro", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
-ERROadm1_tag=M1.mb.tag_get_handle("erroADM1", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
-Sol_TPFA_tag=M1.mb.tag_get_handle("Pressão TPFA", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
-Sol_ADM_tag=M1.mb.tag_get_handle("Pressão ADM", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+ERRO_tag=mb.tag_get_handle("erro", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+ERROadm1_tag=mb.tag_get_handle("erroADM1", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+Sol_TPFA_tag=mb.tag_get_handle("Pressão TPFA", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+Sol_ADM_tag=mb.tag_get_handle("Pressão ADM", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
 
-erm_xx_tag=M1.mb.tag_get_handle("Perm_xx", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
-GIDs=M1.mb.tag_get_data(M1.ID_reordenado_tag,M1.all_volumes,flat=True)
-perms_xx=M1.mb.tag_get_data(M1.perm_tag,M1.all_volumes)[:,0]
+erm_xx_tag=mb.tag_get_handle("Perm_xx", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+GIDs=mb.tag_get_data(ID_reordenado_tag,all_volumes,flat=True)
+perms_xx=mb.tag_get_data(perm_tag,all_volumes)[:,0]
 cont=0
-for v in M1.all_volumes:
+for v in all_volumes:
     gid=GIDs[cont]
-    M1.mb.tag_set_data(ERRO_tag,v,erro[gid])
-    M1.mb.tag_set_data(ERROadm1_tag,v,erroADM1[gid])
-    M1.mb.tag_set_data(Sol_TPFA_tag,v,SOL_TPFA[gid])
-    M1.mb.tag_set_data(Sol_ADM_tag,v,SOL_ADM_fina[gid])
-    M1.mb.tag_set_data(perm_xx_tag,v,perms_xx[cont])
+    mb.tag_set_data(ERRO_tag,v,erro[gid])
+    mb.tag_set_data(ERROadm1_tag,v,erroADM1[gid])
+    mb.tag_set_data(Sol_TPFA_tag,v,SOL_TPFA[gid])
+    mb.tag_set_data(Sol_ADM_tag,v,SOL_ADM_fina[gid])
+    mb.tag_set_data(perm_xx_tag,v,perms_xx[cont])
     cont+=1
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 import pdb; pdb.set_trace()
