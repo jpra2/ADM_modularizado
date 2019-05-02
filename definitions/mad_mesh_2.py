@@ -30,7 +30,7 @@ with open("inputs.yaml", 'r') as stream:
         # data_loaded = yaml.full_load(stream)
 
 input_file = data_loaded['input_file']
-ext_h5m = input_file + '_dual_primal.h5m'
+ext_h5m = input_file + '_malha_adm.h5m'
 os.chdir(flying_dir)
 
 mesh_file = ext_h5m
@@ -878,11 +878,11 @@ av=mb.create_meshset()
 mb.add_entities(av,all_volumes)
 
 input_file = data_loaded['input_file']
-ext_vtk = input_file + '_malha_adm.vtk'
-ext_h5m_out = input_file + '_malha_adm.h5m'
+ext_vtk = input_file + '_malha_adm_final.vtk'
+ext_h5m_output = input_file + '_malha_adm_final.h5m'
 
 mb.write_file(ext_vtk,[av])
-mb.write_file(ext_h5m_out)
+mb.write_file(ext_h5m_output)
 print('New file created')
 
 
@@ -927,4 +927,4 @@ for v in all_volumes:
     mb.tag_set_data(perm_xx_tag,v,perms_xx[cont])
     cont+=1
 
-print('saiu mad_mesh')
+print('saiu mad_mesh_2')

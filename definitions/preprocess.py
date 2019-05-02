@@ -19,9 +19,18 @@ mono_dir = os.path.join(flying_dir, 'monofasico')
 bif_dir = os.path.join(flying_dir, 'bifasico')
 
 ### deletar o conteudo das pastas no diretorio flying
-shutil.rmtree(mono_dir)
-shutil.rmtree(bif_dir)
-shutil.rmtree(flying_dir)
+try:
+    shutil.rmtree(flying_dir)
+except:
+    pass
+try:
+    shutil.rmtree(mono_dir)
+except:
+    pass
+try:
+    shutil.rmtree(bif_dir)
+except:
+    pass
 os.makedirs(flying_dir)
 os.makedirs(mono_dir)
 os.makedirs(bif_dir)
@@ -39,6 +48,8 @@ ext_msh = input_file + '.msh'
 MM = MeshManager(ext_msh)
 bifasico = data_loaded['bifasico']
 os.chdir(flying_dir)
+with open('__init__.py', 'w') as f:
+    pass
 
 def Min_Max(e):
     verts = MM.mb.get_connectivity(e)
@@ -77,8 +88,6 @@ r1 = data_loaded['rs']['r1']
 l1=data_loaded['Ls']['L1']
 l2=data_loaded['Ls']['L2']
 
-
-
 print("")
 print("INICIOU PRÉ PROCESSAMENTO")
 
@@ -103,46 +112,45 @@ for i in range(int(l2[0]/l1[0])):   lx1.append(i*l1[0])
 for i in range(int(l2[1]/l1[1])):   ly1.append(i*l1[1])
 for i in range(int(l2[2]/l1[2])):   lz1.append(i*l1[2])
 
-D_x=max(Lx-int(Lx/l1[0])*l1[0],Lx-int(Lx/l2[0])*l2[0])
-D_y=max(Ly-int(Ly/l1[1])*l1[1],Ly-int(Ly/l2[1])*l2[1])
-D_z=max(Lz-int(Lz/l1[2])*l1[2],Lz-int(Lz/l2[2])*l2[2])
-nD_x=int((D_x+0.001)/l1[0])
-nD_y=int((D_y+0.001)/l1[1])
-nD_z=int((D_z+0.001)/l1[2])
+D_x = max(Lx-int(Lx/l1[0])*l1[0], Lx-int(Lx/l2[0])*l2[0])
+D_y = max(Ly-int(Ly/l1[1])*l1[1], Ly-int(Ly/l2[1])*l2[1])
+D_z = max(Lz-int(Lz/l1[2])*l1[2], Lz-int(Lz/l2[2])*l2[2])
+nD_x = int((D_x+0.001)/l1[0])
+nD_y = int((D_y+0.001)/l1[1])
+nD_z = int((D_z+0.001)/l1[2])
 
-lxd1=[mins[0]+dx0/100]
+lxd1 = [mins[0]+dx0/100]
 for i in range(int(Lx/l1[0])-2-nD_x):
     lxd1.append(l1[0]/2+(i+1)*l1[0])
 lxd1.append(mins[0]+Lx-dx0/100)
 
-lyd1=[mins[1]+dy0/100]
+lyd1 = [mins[1]+dy0/100]
 for i in range(int(Ly/l1[1])-2-nD_y):
     lyd1.append(l1[1]/2+(i+1)*l1[1])
 lyd1.append(mins[1]+Ly-dy0/100)
 
-lzd1=[mins[2]+dz0/100]
+lzd1 = [mins[2]+dz0/100]
 for i in range(int(Lz/l1[2])-2-nD_z):
     lzd1.append(l1[2]/2+(i+1)*l1[2])
 lzd1.append(mins[2]+Lz-dz0/100)
 
 print("definiu planos do nível 1")
-lxd2=[lxd1[0]]
+lxd2 = [lxd1[0]]
 for i in range(1,int(len(lxd1)*l1[0]/l2[0])-1):
     lxd2.append(lxd1[int(i*l2[0]/l1[0] + 1e-9)+1])
 lxd2.append(lxd1[-1])
 
-lyd2=[lyd1[0]]
+lyd2 = [lyd1[0]]
 for i in range(1,int(len(lyd1)*l1[1]/l2[1])-1):
     lyd2.append(lyd1[int(i*l2[1]/l1[1]+1e-9)+1])
 lyd2.append(lyd1[-1])
 
-lzd2=[lzd1[0]]
+lzd2 = [lzd1[0]]
 for i in range(1,int(len(lzd1)*l1[2]/l2[2])-1):
     lzd2.append(lzd1[int(i*l2[2]/l1[2] + 1e-9)+1])
 lzd2.append(lzd1[-1])
 
 print("definiu planos do nível 2")
-
 
 t0=time.time()
 L2_meshset=MM.mb.create_meshset()       # root Meshset
