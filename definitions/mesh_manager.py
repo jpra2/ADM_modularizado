@@ -66,6 +66,7 @@ class MeshManager:
 
         self.create_tags()
         self.set_k_and_phi_structured_spe10()
+        # self.set_k()
         #self.set_information("PERM", self.all_volumes, 3)
         #self.get_boundary_faces()
         self.gravity = data_loaded['gravity']
@@ -95,7 +96,6 @@ class MeshManager:
         self.phi_tag = self.mb.tag_get_handle("PHI", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         self.k_eq_tag = self.mb.tag_get_handle("K_EQ", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         self.cent_tag = self.mb.tag_get_handle("CENT", 3, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
-
 
     def create_vertices(self, coords):
         new_vertices = self.mb.create_vertices(coords)

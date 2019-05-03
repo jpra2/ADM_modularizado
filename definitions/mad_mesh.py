@@ -109,6 +109,9 @@ gravity = data_loaded['gravity']
 bvd = []
 bvn = []
 
+volumes_d = []
+volumes_n = []
+
 inds_wells = []
 for well in data_loaded['Wells_structured']:
     w = data_loaded['Wells_structured'][well]
@@ -132,6 +135,7 @@ for well in data_loaded['Wells_structured']:
 
     if w['type_prescription'] == 'dirichlet':
         bvd.append(box_volumes)
+        volumes_d += list(volumes)
         if gravity == False:
             pressao = np.repeat(value, len(volumes))
 
@@ -143,6 +147,7 @@ for well in data_loaded['Wells_structured']:
         mb.tag_set_data(press_value_tag, volumes, pressao)
 
     elif  w['type_prescription'] == 'neumann':
+        volumes_n += list(volumes)
         bvn.append(box_volumes)
         value = value/len(volumes)
         if w['type_well'] == 'injector':
@@ -157,31 +162,55 @@ for well in data_loaded['Wells_structured']:
     else:
         mb.add_entities(wells_producer, volumes)
 
+np.save('bvd', bvd)
+np.save('bvn', bvn)
 
-bvd = bvd[0]
-bvn = bvn[0]
+bvfd = list()
+for bvdi in bvd:
+    bvfd.append(np.array([np.array([bvdi[0][0]-r0, bvdi[0][1]-r0, bvdi[0][2]-r0]), np.array([bvdi[1][0]+r0, bvdi[1][1]+r0, bvdi[1][2]+r0])]))
+bvfd = np.array(bvfd)
 
-bvfd = np.array([np.array([bvd[0][0]-r0, bvd[0][1]-r0, bvd[0][2]-r0]), np.array([bvd[1][0]+r0, bvd[1][1]+r0, bvd[1][2]+r0])])
-bvfn = np.array([np.array([bvn[0][0]-r0, bvn[0][1]-r0, bvn[0][2]-r0]), np.array([bvn[1][0]+r0, bvn[1][1]+r0, bvn[1][2]+r0])])
+bvfn = list()
+for bvfni in bvn:
+    bvfn.append(np.array([np.array([bvn[0][0]-r0, bvn[0][1]-r0, bvn[0][2]-r0]), np.array([bvn[1][0]+r0, bvn[1][1]+r0, bvn[1][2]+r0])]))
+bvfn = np.array(bvfn)
 
-bvid = np.array([np.array([bvd[0][0]-r1, bvd[0][1]-r1, bvd[0][2]-r1]), np.array([bvd[1][0]+r1, bvd[1][1]+r1, bvd[1][2]+r1])])
-bvin = np.array([np.array([bvn[0][0]-r1, bvn[0][1]-r1, bvn[0][2]-r1]), np.array([bvn[1][0]+r1, bvn[1][1]+r1, bvn[1][2]+r1])])
+# bvfd = np.array([np.array([bvd[0][0]-r0, bvd[0][1]-r0, bvd[0][2]-r0]), np.array([bvd[1][0]+r0, bvd[1][1]+r0, bvd[1][2]+r0])])
+# bvfn = np.array([np.array([bvn[0][0]-r0, bvn[0][1]-r0, bvn[0][2]-r0]), np.array([bvn[1][0]+r0, bvn[1][1]+r0, bvn[1][2]+r0])])
 
-volumes_d, inds_vols_d= get_box(all_volumes, all_centroids, bvd, True)
+bvid = list()
+for bvidi in bvd:
+    gg = np.array([bvidi[0]-r1, bvidi[1]+r1])
+    bvid.append(gg)
+bvid = np.array(bvid)
 
-# volumes com vazao prescrita
-volumes_n, inds_vols_n = get_box(all_volumes, all_centroids, bvn, True)
+bvin = list()
+for bvini in bvn:
+    bvin.append(np.array([np.array([bvini[0][0]-r1, bvini[0][1]-r1, bvini[0][2]-r1]), np.array([bvini[1][0]+r1, bvini[1][1]+r1, bvini[1][2]+r1])]))
+bvin = np.array(bvin)
+
+# bvid = np.array([np.array([bvd[0][0]-r1, bvd[0][1]-r1, bvd[0][2]-r1]), np.array([bvd[1][0]+r1, bvd[1][1]+r1, bvd[1][2]+r1])])
+# bvin = np.array([np.array([bvn[0][0]-r1, bvn[0][1]-r1, bvn[0][2]-r1]), np.array([bvn[1][0]+r1, bvn[1][1]+r1, bvn[1][2]+r1])])
+
+volumes_d = rng.Range(volumes_d)
+volumes_n = rng.Range(volumes_n)
 
 # volumes finos por neumann
-volumes_fn = get_box(all_volumes, all_centroids, bvfn, False)
+volumes_fn = []
+for i in bvfn:
+    volumes_fn += list(get_box(all_volumes, all_centroids, i, False))
+volumes_fn = rng.Range(volumes_fn)
+# volumes_fn = get_box(all_volumes, all_centroids, bvfn, False)
 
 # volumes finos por Dirichlet
-volumes_fd = get_box(all_volumes, all_centroids, bvfd, False)
+volumes_fd = []
+for i in bvfd:
+    volumes_fd += list(get_box(all_volumes, all_centroids, i, False))
+volumes_fd = rng.Range(volumes_fd)
+# volumes_fd = get_box(all_volumes, all_centroids, bvfd, False)
 
 volumes_f = rng.unite(volumes_fn, volumes_fd)
-
-inds_pocos = inds_vols_d + inds_vols_n
-Cent_wels = all_centroids[inds_pocos]
+np.save('volumes_f', np.array(volumes_f))
 
 D1_tag = mb.tag_get_handle('d1')
 D2_tag = mb.tag_get_handle('d2')
@@ -193,11 +222,26 @@ vertices = rng.unite(vertices,mb.get_entities_by_type_and_tag(0, types.MBTET, np
 all_vertex_centroids = np.array([mtu.get_average_position([v]) for v in vertices])
 
 # volumes intermediarios por neumann
-volumes_in = get_box(vertices, all_vertex_centroids, bvin, False)
+volumes_in = []
+for i in bvin:
+    volumes_in += list(get_box(vertices, all_vertex_centroids, i, False))
+volumes_in = rng.Range(volumes_in)
+# volumes_in = get_box(vertices, all_vertex_centroids, bvin, False)
+
 
 # volumes intermediarios por Dirichlet
-volumes_id = get_box(vertices, all_vertex_centroids, bvid, False)
+volumes_id = []
+for i in bvid:
+    volumes_id += list(get_box(vertices, all_vertex_centroids, i, False))
+volumes_id = rng.Range(volumes_id)
+# volumes_id = get_box(vertices, all_vertex_centroids, bvid, False)
+
 intermediarios=rng.unite(volumes_id,volumes_in)
+meshset_intermediarios = mb.create_meshset()
+mb.add_entities(meshset_intermediarios, intermediarios)
+intermediarios_tag = mb.tag_get_handle('intermediarios', 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
+mb.tag_set_data(intermediarios_tag, 0, meshset_intermediarios)
+tags_criadas_aqui.append('intermediarios')
 
 L1_ID_tag=mb.tag_get_handle("l1_ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
 L2_ID_tag=mb.tag_get_handle("l2_ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
@@ -229,25 +273,25 @@ invbAff = solve_block_matrix(faces_adjs_by_dual, ni, mb, k_eq_tag, nf)
 t1 = time.time()
 print("inversão de Aff: ", t1-t0)
 
-try:
-    SOL_ADM_f = np.load('SOL_ADM_fina.npy')
-    if len(SOL_ADM_f)!=len(all_volumes):
-        print("criará o vetor para refinamento")
-        SOL_ADM_f = np.repeat(1,len(all_volumes))
-    else:
-        print("leu o vetor criado")
-except:
-    print("criará o vetor para refinamento")
-    SOL_ADM_f = np.repeat(1,len(all_volumes))
+# try:
+#     SOL_ADM_f = np.load('SOL_ADM_fina.npy')
+#     if len(SOL_ADM_f)!=len(all_volumes):
+#         print("criará o vetor para refinamento")
+#         SOL_ADM_f = np.repeat(1,len(all_volumes))
+#     else:
+#         print("leu o vetor criado")
+# except:
+#     print("criará o vetor para refinamento")
+#     SOL_ADM_f = np.repeat(1,len(all_volumes))
 
 ID_reordenado_tag = mb.tag_get_handle('ID_reord_tag')
 
-gids_p_d = mb.tag_get_data(ID_reordenado_tag,volumes_d,flat=True)
-gids_p_n = mb.tag_get_data(ID_reordenado_tag,volumes_n,flat=True)
-press_d=SOL_ADM_f[gids_p_d]
-press_n=SOL_ADM_f[gids_p_n]
-
-delta_p_res=abs(sum(press_d)/len(press_d)-sum(press_n)/len(press_n))
+# gids_p_d = mb.tag_get_data(ID_reordenado_tag,volumes_d,flat=True)
+# gids_p_n = mb.tag_get_data(ID_reordenado_tag,volumes_n,flat=True)
+# press_d=SOL_ADM_f[gids_p_d]
+# press_n=SOL_ADM_f[gids_p_n]
+# delta_p_res=abs(sum(press_d)/len(press_d)-sum(press_n)/len(press_n))
+# delta_p_res=abs(max(press_d)-min(press_d))
 
 l2_meshset_tag = mb.tag_get_handle('L2_MESHSET')
 L2_meshset = mb.tag_get_data(l2_meshset_tag, 0, flat=True)[0]
@@ -275,13 +319,32 @@ for i in range(ordem+1):
     func+=fit[i]*x**(ordem-i)
 derivada=sympy.diff(func,x)
 inc_secante=(lg[-1]-lg[0])/len(lg)
-equa=sympy.Eq(derivada,inc_secante)
-real_roots=sympy.solve(equa)
-ind_inferior=int(real_roots[0])
-ind_superior=int(real_roots[1])
+
+###########################################
+
+equa=sympy.Eq(derivada,2*inc_secante)
+#real_roots=sympy.solve(equa)
+ind_inferior=int(sympy.nsolve(equa,0, verify=False))
+if ind_inferior<0:
+    ind_inferior=0
+ind_superior=int(sympy.nsolve(equa,len(lg)))
+if ind_superior>len(lg)-1:
+    ind_superior=len(lg)-1
+
+new_inc_secante=(lg[ind_superior]-lg[ind_inferior])/(ind_superior-ind_inferior)
+eq2=sympy.Eq(derivada,new_inc_secante)
+new_ind_inferior=int(sympy.nsolve(eq2,ind_inferior, verify=False))
+if new_ind_inferior<ind_inferior:
+    new_ind_inferior=ind_inferior
+new_ind_superior=int(sympy.nsolve(eq2,ind_superior, verify=False))
+if new_ind_superior>ind_superior:
+    new_ind_superior=ind_superior
+##########################################
+
 
 val_barreira=med_perm_by_primal_1[ind_inferior]
 val_canal=med_perm_by_primal_1[ind_superior]
+
 
 t0 = time.time()
 n1=0
@@ -317,10 +380,8 @@ for m2 in meshset_by_L2:
             #print("Desvio padrão",desv_pad_x,desv_pad_y,desv_pad_z,desv_pad_x/med1_x,desv_pad_y/med1_y,desv_pad_z/med1_z)
             #print(med1_z)
             gids_primal=mb.tag_get_data(ID_reordenado_tag,elem_by_L1)
-            press_primal=SOL_ADM_f[gids_primal]
-            delta_p_prim=max(press_primal)-min(press_primal)
             #print(delta_p_prim,delta_p_res)
-            if delta_p_prim>0.05*delta_p_res or ref>5.0 or med1_x<val_barreira or med1_x>val_canal:  #or max(press_primal)>max(press_n) or min(press_primal)<min(press_d)
+            if med1_x<val_barreira or med1_x>val_canal:  #or max(press_primal)>max(press_n) or min(press_primal)<min(press_d)
                 aux=1
                 tem_poço_no_vizinho=True
 
@@ -387,6 +448,7 @@ for m2 in meshset_by_L2:
 print('Definição da malha ADM: ',time.time()-t0)
 t0=time.time()
 
+
 av=mb.create_meshset()
 mb.add_entities(av,all_volumes)
 #mb.write_file('teste_3D_unstructured_18.vtk',[av])
@@ -402,6 +464,8 @@ for tag in tags:
     all_gids -= minim
     mb.tag_set_data(tag, all_volumes, all_gids)
 
+###preprocessamento1
+##########################################################
 
 boundary_faces_tag = mb.tag_get_handle("FACES_BOUNDARY")
 faces_boundary = mb.tag_get_data(boundary_faces_tag, 0, flat=True)[0]
@@ -434,7 +498,7 @@ for i, face in enumerate(faces_in):
 
     lines_tf += [id_glob0, id_glob1]
     cols_tf += [id_glob1, id_glob0]
-    data_tf += [-keq, -keq]
+    data_tf += [keq, keq]
 
     s_grav = gama*keq*(all_centroids[id1][2] - all_centroids[id0][2])
     s_grav_faces[i] = s_grav
@@ -452,6 +516,9 @@ Tf = csc_matrix((data_tf,(lines_tf,cols_tf)),shape=(n, n))
 Tf = Tf.tolil()
 d1 = np.array(Tf.sum(axis=1)).reshape(1, n)[0]*(-1)
 Tf.setdiag(d1)
+
+scipy.sparse.save_npz('Tf', Tf.tocsc())
+np.save('b2', b2)
 
 As = oth.get_Tmod_by_sparse_wirebasket_matrix(Tf, wirebasket_numbers)
 
@@ -480,7 +547,6 @@ IDs_arestas_1_locais=np.setdiff1d(range(na),IDs_arestas_0_locais)
 
 ids_arestas_slin_m0=np.nonzero(As['Aev'].sum(axis=1))[0]
 
-
 Aev = As['Aev']
 Ivv = As['Ivv']
 Aif = As['Aif']
@@ -496,6 +562,8 @@ PAD=vstack([M3,PAD])
 invAii=invbAii
 PAD=vstack([-invAii*(Aif*M3),PAD])
 print("get_OP_AMS", time.time()-ta1)
+
+scipy.sparse.save_npz('PAD', PAD.tocsc())
 
 del M3
 
@@ -557,6 +625,8 @@ c1=mb.tag_get_data(ID_reordenado_tag, all_volumes, flat=True)
 d1=np.ones((1,len(l1)),dtype=np.int)[0]
 OR_AMS=csc_matrix((d1,(l1,c1)),shape=(nv,len(all_volumes)))
 
+scipy.sparse.save_npz('OR_AMS', OR_AMS.tocsc())
+
 OP_AMS=PAD
 
 v=mb.create_meshset()
@@ -568,8 +638,6 @@ are=mb.get_entities_by_type_and_tag(v, types.MBHEX, np.array([D2_tag]), np.array
 ver=mb.get_entities_by_type_and_tag(v, types.MBHEX, np.array([D2_tag]), np.array([3]))
 
 fine_to_primal2_classic_tag = mb.tag_get_handle('FINE_TO_PRIMAL2_CLASSIC')
-
-mb.tag_set_data(fine_to_primal2_classic_tag, ver, np.arange(len(ver)))
 
 lines=[]
 cols=[]
@@ -613,6 +681,8 @@ for i in range(nver):
     data.append(1)
     #G[nint+nfac+nare+i][ID_AMS]=1
 G=csc_matrix((data,(lines,cols)),shape=(nv,nv))
+
+scipy.sparse.save_npz('G', G.tocsc())
 
 T = Tf.copy()
 b = b2.copy()
@@ -717,11 +787,15 @@ P2=G.transpose()*P2
 
 OP_AMS_2=P2
 
+scipy.sparse.save_npz('OP_AMS_2', OP_AMS_2.tocsc())
+
+
 
 ID_AMS_1=mb.tag_get_data(fine_to_primal1_classic_tag,vertices,flat=True)
 ID_AMS_2=mb.tag_get_data(fine_to_primal2_classic_tag,vertices,flat=True)
 
 OR_AMS_2=csc_matrix((np.repeat(1,len(vertices)),(ID_AMS_2,ID_AMS_1)),shape=(len(ver),len(vertices)))
+scipy.sparse.save_npz('OR_AMS_2', OR_AMS_2.tocsc())
 T_AMS_2=OR_AMS_2*T_AMS*OP_AMS_2
 
 lines=[]
@@ -794,15 +868,15 @@ data=np.concatenate([data,DAT])
 
 OP_ADM_2=csc_matrix((data,(lines,cols)),shape=(n1,n2))
 
-OP2=P2.copy()
-ta2=time.time()
-vm=mb.create_meshset()
-mb.add_entities(vm,vertices)
-v_nivel_0=mb.get_entities_by_type_and_tag(vm, types.MBHEX, np.array([L3_ID_tag]), np.array([1]))
-v_nivel_1=mb.get_entities_by_type_and_tag(vm, types.MBHEX, np.array([L3_ID_tag]), np.array([2]))
-v_n0e1=rng.unite(v_nivel_0,v_nivel_1)
-ID_class=mb.tag_get_data(fine_to_primal1_classic_tag,v_n0e1, flat=True)
-OP2[ID_class]=csc_matrix((1,OP2.shape[1]))
+# OP2=P2.copy()
+# ta2=time.time()
+# vm=mb.create_meshset()
+# mb.add_entities(vm,vertices)
+# v_nivel_0=mb.get_entities_by_type_and_tag(vm, types.MBHEX, np.array([L3_ID_tag]), np.array([1]))
+# v_nivel_1=mb.get_entities_by_type_and_tag(vm, types.MBHEX, np.array([L3_ID_tag]), np.array([2]))
+# v_n0e1=rng.unite(v_nivel_0,v_nivel_1)
+# ID_class=mb.tag_get_data(fine_to_primal1_classic_tag,v_n0e1, flat=True)
+# OP2[ID_class]=csc_matrix((1,OP2.shape[1]))
 
 nivel_0=mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([L3_ID_tag]), np.array([1]))
 nivel_1=mb.get_entities_by_type_and_tag(vm, types.MBHEX, np.array([L3_ID_tag]), np.array([2]))
@@ -810,24 +884,24 @@ n0e1=rng.unite(nivel_0,nivel_1)
 IDs_ADM1=mb.tag_get_data(L1_ID_tag,n0e1, flat=True)
 IDs_ADM2=mb.tag_get_data(L2_ID_tag,n0e1, flat=True)
 
-lines=IDs_ADM1
-cols=IDs_ADM2
-data=np.repeat(1,len(lines))
-IDs_AMS2=mb.tag_get_data(fine_to_primal2_classic_tag,ver, flat=True)
-IDs_ADM2_ver=mb.tag_get_data(L2_ID_tag,ver, flat=True)
-AMS2_TO_ADM2=dict(zip(IDs_AMS2,IDs_ADM2_ver))
+# lines=IDs_ADM1
+# cols=IDs_ADM2
+# data=np.repeat(1,len(lines))
+# IDs_AMS2=mb.tag_get_data(fine_to_primal2_classic_tag,ver, flat=True)
+# IDs_ADM2_ver=mb.tag_get_data(L2_ID_tag,ver, flat=True)
+# AMS2_TO_ADM2=dict(zip(IDs_AMS2,IDs_ADM2_ver))
 
-m=find(OP2)
-l1=m[0]
-c1=m[1]
-d1=m[2]
-ID_ADM2=[AMS2_TO_ADM2[k] for k in c1]
-lines=np.concatenate([lines,l1])
-cols=np.concatenate([cols,ID_ADM2])
-data=np.concatenate([data,d1])
-
-opad2=csc_matrix((data,(lines,cols)),shape=(n1,n2))
-print("opad2",time.time()-ta2)
+# m=find(OP2)
+# l1=m[0]
+# c1=m[1]
+# d1=m[2]
+# ID_ADM2=[AMS2_TO_ADM2[k] for k in c1]
+# lines=np.concatenate([lines,l1])
+# cols=np.concatenate([cols,ID_ADM2])
+# data=np.concatenate([data,d1])
+#
+# opad2=csc_matrix((data,(lines,cols)),shape=(n1,n2))
+# print("opad2",time.time()-ta2)
 
 l2=mb.tag_get_data(L2_ID_tag, all_volumes, flat=True)
 c2=mb.tag_get_data(L1_ID_tag, all_volumes, flat=True)
@@ -837,12 +911,9 @@ OR_ADM_2=csc_matrix((d2,(l2,c2)),shape=(n2,n1))
 dirichlet_tag = mb.tag_get_handle('P')
 ID_global=mb.tag_get_data(ID_reordenado_tag,volumes_d, flat=True)
 values_d = mb.tag_get_data(dirichlet_tag, volumes_d, flat=True)
-
 T[ID_global]=scipy.sparse.lil_matrix((len(ID_global),T.shape[0]))
 T[ID_global,ID_global]=np.ones(len(ID_global))
 b[ID_global] = values_d
-
-########################## apagar para usar pressão-vazão
 
 neuman_tag = mb.tag_get_handle('Q')
 ID_globaln=mb.tag_get_data(ID_reordenado_tag,volumes_n, flat=True)
@@ -850,7 +921,8 @@ values_n = mb.tag_get_data(neuman_tag, volumes_n, flat=True)
 if len(ID_globaln) > 0:
     b[ID_globaln] = values_n
 
-########################## fim de apagar
+scipy.sparse.save_npz('T', T.tocsc())
+np.save('b', b)
 
 t0=time.time()
 SOL_ADM_2=linalg.spsolve(OR_ADM_2*OR_ADM*T*OP_ADM*OP_ADM_2,OR_ADM_2*OR_ADM*b) #+OR_ADM_2*T1*corr_adm2_sd    -OR_ADM_2*T1*corr_adm2_sd
@@ -876,14 +948,6 @@ for v in all_volumes:
     cont+=1
 av=mb.create_meshset()
 mb.add_entities(av,all_volumes)
-
-input_file = data_loaded['input_file']
-ext_vtk = input_file + '_malha_adm.vtk'
-ext_h5m_out = input_file + '_malha_adm.h5m'
-
-mb.write_file(ext_vtk,[av])
-mb.write_file(ext_h5m_out)
-print('New file created')
 
 
 SOL_ADM_1=linalg.spsolve(OR_ADM*T*OP_ADM,OR_ADM*b)    #-OR_ADM*T*corr_adm1_sd   +OR_ADM*T*corr_adm1_sd
@@ -926,5 +990,13 @@ for v in all_volumes:
     mb.tag_set_data(Sol_ADM_tag,v,SOL_ADM_fina[gid])
     mb.tag_set_data(perm_xx_tag,v,perms_xx[cont])
     cont+=1
+
+input_file = data_loaded['input_file']
+ext_vtk = input_file + '_malha_adm.vtk'
+ext_h5m_out = input_file + '_malha_adm.h5m'
+
+mb.write_file(ext_vtk,[av])
+mb.write_file(ext_h5m_out)
+print('New file created')
 
 print('saiu mad_mesh')

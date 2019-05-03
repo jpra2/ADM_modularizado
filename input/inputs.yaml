@@ -28,8 +28,8 @@ Wells_structured:
     type_region: 'box'
     region1: [0.0, 0.0, 0.0]
     region2: [20, 10, 60]
-    type_prescription: 'neumann'
-    value: 72900.0
+    type_prescription: 'dirichlet'
+    value: 900.0
     type_well: 'injector'
     type_fluid: Null
 
