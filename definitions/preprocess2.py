@@ -1,6 +1,12 @@
 from definitions.mesh_manager import MeshManager
-import dual_primal as dupr
+from definitions.dual_primal import DualPrimal
 import time
+import os
+import shutil
+import yaml
+import numpy as np
+
+__all__ = ['dualprimal', 'MM']
 
 t0 = time.time()
 parent_dir = os.path.dirname(os.path.abspath(__file__))
@@ -74,7 +80,5 @@ l2=data_loaded['Ls']['L2']
 print("")
 print("INICIOU PRÉ PROCESSAMENTO")
 t1 = time.time()
-
-MM.tags = dict()
-
-dupr(MM, Lx, Ly, Lx, mins, l2, l1)
+dualprimal = DualPrimal(MM, Lx, Ly, Lz, mins, l2, l1, dx0, dy0, dz0, lx, ly, lz)
+del DualPrimal
