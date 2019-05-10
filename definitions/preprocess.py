@@ -60,8 +60,7 @@ def Min_Max(e):
 
 all_volumes=MM.all_volumes
 all_centroids = MM.all_centroids
-for i, j in zip(all_volumes, all_centroids):
-    MM.mb.tag_set_data(MM.cent_tag, i, j)
+MM.mb.tag_set_data(MM.cent_tag, all_volumes, MM.all_centroids)
 
 verts = MM.mb.get_connectivity(all_volumes[0])
 coords = MM.mb.get_coords(verts).reshape([len(verts), 3])
