@@ -2,6 +2,7 @@ import time
 import numpy as np
 from utils import pymoab_utils as utpy
 from pymoab import types, rng
+import scipy.sparse as sp
 
 __all__ = ['DualPrimal']
 
@@ -11,12 +12,15 @@ class DualPrimal:
         gdp = GenerateDualPrimal()
         gdp.DualPrimal2(MM, Lx, Ly, Lz, mins, l2, l1, dx0, dy0, dz0)
         gdp.topology(MM, lx, ly, lz)
+        gdp.get_adjs_volumes(MM)
+        gdp.get_Tf(MM)
 
         self.tags = gdp.tags
         self.intern_adjs_by_dual = gdp.intern_adjs_by_dual
         self.faces_adjs_by_dual = gdp.faces_adjs_by_dual
         self.wirebasket_elems = gdp.wirebasket_elems
         self.wirebasket_numbers = gdp.wirebasket_numbers
+        self.As = gdp.As
 
 
 def get_box(conjunto, all_centroids, limites, return_inds):
@@ -477,3 +481,69 @@ class GenerateDualPrimal:
 
         self.intern_adjs_by_dual = intern_adjs_by_dual
         self.faces_adjs_by_dual = faces_adjs_by_dual
+
+    def get_adjs_volumes(self, MM):
+        MM.all_intern_faces = rng.subtract(MM.all_faces, MM.all_faces_boundary)
+        MM.all_intern_adjacencies = np.array([MM.mb.get_adjacencies(face, 3) for face in MM.all_intern_faces])
+        MM.all_adjacent_volumes=[]
+        MM.all_adjacent_volumes.append(MM.mb.tag_get_data(MM.ID_reordenado_tag,np.array(MM.all_intern_adjacencies[:,0]),flat=True))
+        MM.all_adjacent_volumes.append(MM.mb.tag_get_data(MM.ID_reordenado_tag,np.array(MM.all_intern_adjacencies[:,1]),flat=True))
+
+    def get_Tf(self, MM):
+
+        ni = self.wirebasket_numbers[0][0]
+        nf = self.wirebasket_numbers[0][1]
+        ne = self.wirebasket_numbers[0][2]
+        nv = self.wirebasket_numbers[0][3]
+
+        nni = self.wirebasket_numbers[0][0]
+        nnf = self.wirebasket_numbers[0][1] + nni
+        nne = self.wirebasket_numbers[0][2] + nnf
+        nnv = self.wirebasket_numbers[0][3] + nne
+
+        ADJs1 = MM.all_adjacent_volumes[0]
+        ADJs2 = MM.all_adjacent_volumes[1]
+        ks = MM.mb.tag_get_data(MM.k_eq_tag, MM.all_intern_faces,flat=True)
+        lines = ADJs1
+        cols = ADJs2
+        data = ks
+
+        Ttpfa = sp.csc_matrix((data,(lines,cols)),shape=(len(MM.all_volumes),len(MM.all_volumes)))
+        rr = -np.array(Ttpfa.sum(axis=1))[:,0]
+        soma = sp.csc_matrix((rr,(range(Ttpfa.shape[0]),range(Ttpfa.shape[0]))),shape=(len(MM.all_volumes),len(MM.all_volumes)))
+        Ttpfa += soma
+
+        #internos
+        Aii = Ttpfa[0:nni, 0:nni]
+        Aif = Ttpfa[0:nni, nni:nnf]
+
+        #faces
+        Aff = Ttpfa[nni:nnf, nni:nnf]
+        Afe = Ttpfa[nni:nnf, nnf:nne]
+        rr = -np.array(Aif.transpose().sum(axis=1))[:,0]
+        soma = sp.csc_matrix((rr,(range(Aff.shape[0]),range(Aff.shape[0]))),shape=(Aff.shape))
+        Aff += soma
+
+        # d1 = np.matrix(Aff.diagonal()).reshape([nf, 1])
+        # d1 += soma
+
+        #arestas
+        Aee = Ttpfa[nnf:nne, nnf:nne]
+        Aev = Ttpfa[nnf:nne, nne:nnv]
+        rr = -np.array(Afe.transpose().sum(axis=1))[:,0]
+        soma = sp.csc_matrix((rr,(range(Aee.shape[0]),range(Aee.shape[0]))),shape=(Aee.shape))
+        Aee += soma
+        # d1 += soma
+        # Aee.setdiag(d1)
+        Ivv = sp.identity(nv)
+
+        As = {}
+        As['Aii'] = Aii
+        As['Aif'] = Aif
+        As['Aff'] = Aff
+        As['Afe'] = Afe
+        As['Aee'] = Aee
+        As['Aev'] = Aev
+        As['Ivv'] = Ivv
+        As['T'] = Ttpfa
+        self.As = As

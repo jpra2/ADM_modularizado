@@ -1,5 +1,6 @@
 from definitions.mesh_manager import MeshManager
 from definitions.dual_primal import DualPrimal
+from definitions.operators_ams import OperatorsAms1
 import time
 import os
 import shutil
@@ -81,3 +82,4 @@ print("")
 print("INICIOU PRÉ PROCESSAMENTO")
 t1 = time.time()
 dualprimal = DualPrimal(MM, Lx, Ly, Lz, mins, l2, l1, dx0, dy0, dz0, lx, ly, lz)
+ops1 = OperatorsAms1()
