@@ -563,9 +563,9 @@ SOL_TPFA = np.load('SOL_TPFA.npy')'''
 print("resolvendo TPFA")
 t0=time.time()
 T = T.tocsc()
-SOL_TPFA=linalg.spsolve(T,b)
+# SOL_TPFA=linalg.spsolve(T,b)
+SOL_TPFA = np.load('SOL_TPFA.npy')
 print("resolveu TPFA: ")
-np.save('SOL_TPFA.npy', SOL_TPFA)
 
 
 erro=np.zeros(len(SOL_TPFA))

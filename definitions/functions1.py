@@ -3,11 +3,7 @@ from pymoab import core, types, rng, topo_util
 from scipy.sparse import linalg, csc_matrix, hstack, vstack, csr_matrix
 import time
 
-
-
 __all__ = ['get_box', 'lu_inv2', 'lu_inv3', 'lu_inv4']
-
-
 
 def get_box(conjunto, all_centroids, limites, return_inds):
     # conjunto-> lista

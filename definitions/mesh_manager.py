@@ -96,6 +96,20 @@ class MeshManager:
         self.phi_tag = self.mb.tag_get_handle("PHI", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         self.k_eq_tag = self.mb.tag_get_handle("K_EQ", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         self.cent_tag = self.mb.tag_get_handle("CENT", 3, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        self.tags = dict()
+        self.tags['PERM'] = self.perm_tag
+        self.tags['finos'] = self.finos_tag
+        self.tags['WELLS_D'] = self.wells_dirichlet_tag
+        self.tags['WELLS_N'] = self.wells_neumann_tag
+        self.tags['P'] = self.press_value_tag
+        self.tags['Q'] = self.vazao_value_tag
+        self.tags['FACES_BOUNDARY'] = self.all_faces_boundary_tag
+        self.tags['AREA'] = self.area_tag
+        self.tags['G_ID_tag'] = self.GLOBAL_ID_tag
+        self.tags['ID_reord_tag'] = self.ID_reordenado_tag
+        self.tags['PHI'] = self.phi_tag
+        self.tags['K_EQ'] = self.k_eq_tag
+        self.tags['CENT'] = self.cent_tag
 
     def create_vertices(self, coords):
         new_vertices = self.mb.create_vertices(coords)
