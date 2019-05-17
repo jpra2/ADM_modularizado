@@ -82,4 +82,6 @@ print("")
 print("INICIOU PRÉ PROCESSAMENTO")
 t1 = time.time()
 dualprimal = DualPrimal(MM, Lx, Ly, Lz, mins, l2, l1, dx0, dy0, dz0, lx, ly, lz)
-ops1 = OperatorsAms1()
+ops1 = OperatorsAms1(MM, dualprimal.As, dualprimal.wirebasket_numbers[0], MM.k_eq_tag, dualprimal.intern_adjs_by_dual, dualprimal.faces_adjs_by_dual)
+
+import pdb; pdb.set_trace()
