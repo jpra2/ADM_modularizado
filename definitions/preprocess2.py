@@ -6,7 +6,7 @@ import shutil
 import yaml
 import numpy as np
 
-__all__ = ['dualprimal', 'MM']
+__all__ = ['dualprimal', 'MM', 'data_loaded']
 
 t0 = time.time()
 parent_dir = os.path.dirname(os.path.abspath(__file__))
@@ -81,4 +81,3 @@ print("")
 print("INICIOU PRÉ PROCESSAMENTO")
 t1 = time.time()
 dualprimal = DualPrimal(MM, Lx, Ly, Lz, mins, l2, l1, dx0, dy0, dz0, lx, ly, lz)
-del DualPrimal
