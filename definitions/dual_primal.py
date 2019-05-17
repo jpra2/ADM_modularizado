@@ -505,7 +505,7 @@ class GenerateDualPrimal:
                     inter=rng.Range(np.array(vols)[np.where(tipo==0)[0]])
 
                     MM.mb.tag_set_data(local_id_int_tag,inter,range(len(inter)))
-                    add_topology(inter,local_id_int_tag,intern_adjs_by_dual)
+                    add_topology(MM, inter,local_id_int_tag,intern_adjs_by_dual)
 
 
                     fac=rng.Range(np.array(vols)[np.where(tipo==1)[0]])
@@ -540,9 +540,9 @@ class GenerateDualPrimal:
 
                     sgids+=len(f1)
                     MM.mb.tag_set_data(local_id_fac_tag,f1,range(len(f1)))
-                    add_topology(f1,local_id_fac_tag,faces_adjs_by_dual)
+                    add_topology(MM, f1,local_id_fac_tag,faces_adjs_by_dual)
 
-        print(time.time()-t1,"criou meshset")
+        print(time.time()-t0,"criou meshset")
 
         self.intern_adjs_by_dual = intern_adjs_by_dual
         self.faces_adjs_by_dual = faces_adjs_by_dual

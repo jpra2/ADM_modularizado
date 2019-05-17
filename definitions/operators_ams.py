@@ -1,5 +1,5 @@
 from definitions.functions1 import lu_inv4, solve_block_matrix
-from scipy.sparse import find
+from scipy.sparse import vstack
 import numpy as np
 
 
