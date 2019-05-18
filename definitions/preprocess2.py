@@ -6,8 +6,9 @@ import os
 import shutil
 import yaml
 import numpy as np
+import pdb
 
-__all__ = ['dualprimal', 'MM', 'data_loaded']
+__all__ = ['dualprimal', 'MM', 'data_loaded', 'ops1']
 
 t0 = time.time()
 parent_dir = os.path.dirname(os.path.abspath(__file__))
@@ -31,6 +32,7 @@ try:
 except:
     pass
 os.makedirs(flying_dir)
+os.chdir(flying_dir)
 os.makedirs(mono_dir)
 os.makedirs(bif_dir)
 ################################
@@ -46,8 +48,6 @@ input_file = data_loaded['input_file']
 ext_msh = input_file + '.msh'
 MM = MeshManager(ext_msh)
 os.chdir(flying_dir)
-with open('__init__.py', 'w') as f:
-    pass
 
 all_volumes=MM.all_volumes
 all_centroids = MM.all_centroids
@@ -78,10 +78,13 @@ r1 = data_loaded['rs']['r1']
 l1=data_loaded['Ls']['L1']
 l2=data_loaded['Ls']['L2']
 
+tags = []
+
 print("")
 print("INICIOU PRÉ PROCESSAMENTO")
 t1 = time.time()
-dualprimal = DualPrimal(MM, Lx, Ly, Lz, mins, l2, l1, dx0, dy0, dz0, lx, ly, lz)
-ops1 = OperatorsAms1(MM, dualprimal.As, dualprimal.wirebasket_numbers[0], MM.k_eq_tag, dualprimal.intern_adjs_by_dual, dualprimal.faces_adjs_by_dual)
+dualprimal = DualPrimal(MM, Lx, Ly, Lz, mins, l2, l1, dx0, dy0, dz0, lx, ly, lz, data_loaded)
+ops1 = OperatorsAms1(MM, dualprimal)
 
-import pdb; pdb.set_trace()
+tags += list(dualprimal.tags.keys())
+tags += list(MM.tags.keys())

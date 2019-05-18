@@ -1,20 +1,22 @@
 from definitions.functions1 import lu_inv4, solve_block_matrix
-from scipy.sparse import vstack
+import scipy.sparse as sp
 import numpy as np
+import pdb
 
 
 class OperatorsAms1:
 
-    def __init__(self, MM, As, wire_numbers1, k_eq_tag, intern_adjs_by_dual, faces_adjs_by_dual):
-        op1 = Operators1()
-        self.OP1 = op1.get_op1_AMS_TPFA(MM.mb, faces_adjs_by_dual, intern_adjs_by_dual, wire_numbers1[0], wire_numbers1[1], MM.k_eq_tag, As)
-
+    def __init__(self, MM, dualprimal):
+        ops1 = Operators1()
+        self.OP1_AMS = ops1.get_op1_AMS_TPFA(MM.mb, dualprimal.faces_adjs_by_dual, dualprimal.intern_adjs_by_dual, dualprimal.wirebasket_numbers[0][0], dualprimal.wirebasket_numbers[0][1], MM.k_eq_tag, dualprimal.As)
+        self.OR1_AMS = ops1.get_OR1_AMS(MM, dualprimal)
 
 
 
 class Operators1:
 
     def __init__(self):
+
         self.tags = dict()
 
     def calc_OP1(self, As, wire_numbers1):
@@ -103,11 +105,19 @@ class Operators1:
         Afe = As['Afe']
         invAee=lu_inv4(As['Aee'].tocsc(), ids_arestas_slin_m0)
         M2=-invAee*Aev
-        PAD=vstack([M2,Ivv])
+        PAD=sp.vstack([M2,Ivv])
         invAff=invbAff
         M3=-invAff*(Afe*M2)
-        PAD=vstack([M3,PAD])
+        PAD=sp.vstack([M3,PAD])
         invAii=invbAii
-        PAD=vstack([-invAii*(Aif*M3),PAD])
+        PAD=sp.vstack([-invAii*(Aif*M3),PAD])
 
         return PAD
+
+    def get_OR1_AMS(self, MM, dualprimal):
+        nv = dualprimal.wirebasket_numbers[0][3]
+        l1 = MM.mb.tag_get_data(dualprimal.tags['FINE_TO_PRIMAL1_CLASSIC'], MM.all_volumes, flat=True)
+        c1 = MM.mb.tag_get_data(MM.ID_reordenado_tag, MM.all_volumes, flat=True)
+        d1 = np.ones((1,len(l1)), dtype=np.int)[0]
+        OR_AMS = sp.csc_matrix((d1, (l1, c1)), shape=(nv, len(MM.all_volumes)))
+        return OR_AMS

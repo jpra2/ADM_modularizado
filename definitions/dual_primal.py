@@ -3,17 +3,19 @@ import numpy as np
 from utils import pymoab_utils as utpy
 from pymoab import types, rng
 import scipy.sparse as sp
+from utils.others_utils import OtherUtils as oth
+import pdb
 
 __all__ = ['DualPrimal']
 
 class DualPrimal:
 
-    def __init__(self, MM, Lx, Ly, Lz, mins, l2, l1, dx0, dy0, dz0, lx, ly, lz):
+    def __init__(self, MM, Lx, Ly, Lz, mins, l2, l1, dx0, dy0, dz0, lx, ly, lz, data_loaded):
         gdp = GenerateDualPrimal()
         gdp.DualPrimal2(MM, Lx, Ly, Lz, mins, l2, l1, dx0, dy0, dz0)
         gdp.topology(MM, lx, ly, lz, Lx, Ly, Lz)
         gdp.get_adjs_volumes(MM)
-        gdp.get_Tf(MM)
+        gdp.get_Tf(MM, data_loaded)
 
         self.tags = gdp.tags
         self.intern_adjs_by_dual = gdp.intern_adjs_by_dual
@@ -549,12 +551,12 @@ class GenerateDualPrimal:
 
     def get_adjs_volumes(self, MM):
         MM.all_intern_faces = rng.subtract(MM.all_faces, MM.all_faces_boundary)
-        MM.all_intern_adjacencies = np.array([MM.mb.get_adjacencies(face, 3) for face in MM.all_intern_faces])
+        MM.all_intern_adjacencies = np.array([np.array(MM.mb.get_adjacencies(face, 3)) for face in MM.all_intern_faces])
         MM.all_adjacent_volumes=[]
-        MM.all_adjacent_volumes.append(MM.mb.tag_get_data(MM.ID_reordenado_tag,np.array(MM.all_intern_adjacencies[:,0]),flat=True))
-        MM.all_adjacent_volumes.append(MM.mb.tag_get_data(MM.ID_reordenado_tag,np.array(MM.all_intern_adjacencies[:,1]),flat=True))
+        MM.all_adjacent_volumes.append(MM.mb.tag_get_data(MM.ID_reordenado_tag, np.array(MM.all_intern_adjacencies[:,0]), flat=True))
+        MM.all_adjacent_volumes.append(MM.mb.tag_get_data(MM.ID_reordenado_tag, np.array(MM.all_intern_adjacencies[:,1]), flat=True))
 
-    def get_Tf(self, MM):
+    def get_Tf_dep0(self, MM, *args, **kwargs):
 
         ni = self.wirebasket_numbers[0][0]
         nf = self.wirebasket_numbers[0][1]
@@ -612,3 +614,71 @@ class GenerateDualPrimal:
         As['Ivv'] = Ivv
         As['T'] = Ttpfa
         self.As = As
+
+    def get_Tf(self, MM, data_loaded):
+
+        b = np.zeros(len(MM.all_volumes))
+
+        gamaf_tag = MM.mb.tag_get_handle('GAMAF', 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        self.tags['GAMAF'] = gamaf_tag
+        sgravf_tag = MM.mb.tag_get_handle('SGRAVF', 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        self.tags['SGRAVF'] = sgravf_tag
+        sgravv_tag = MM.mb.tag_get_handle('SGRAVV', 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        self.tags['SGRAVV'] = sgravv_tag
+        gama = float(data_loaded['dados_monofasico']['gama'])
+        MM.mb.tag_set_data(gamaf_tag, MM.all_faces, np.repeat(gama, len(MM.all_faces)))
+
+        # ni = self.wirebasket_numbers[0][0]
+        # nf = self.wirebasket_numbers[0][1]
+        # ne = self.wirebasket_numbers[0][2]
+        # nv = self.wirebasket_numbers[0][3]
+        #
+        # nni = self.wirebasket_numbers[0][0]
+        # nnf = self.wirebasket_numbers[0][1] + nni
+        # nne = self.wirebasket_numbers[0][2] + nnf
+        # nnv = self.wirebasket_numbers[0][3] + nne
+
+        ADJs1 = MM.all_adjacent_volumes[0]
+        ADJs2 = MM.all_adjacent_volumes[1]
+        ids_volumes0 = MM.mb.tag_get_data(MM.tags['IDS_VOLUMES'], np.array(MM.all_intern_adjacencies[:,0]), flat=True)
+        ids_volumes1 = MM.mb.tag_get_data(MM.tags['IDS_VOLUMES'], np.array(MM.all_intern_adjacencies[:,1]), flat=True)
+        ks = MM.mb.tag_get_data(MM.k_eq_tag, MM.all_intern_faces, flat=True)
+        lines = []
+        cols = []
+        data = []
+
+        s_gravf = np.zeros(len(MM.all_intern_faces))
+
+        for i, face in enumerate(MM.all_intern_faces):
+            gid0 = ADJs1[i]
+            gid1 = ADJs2[i]
+            keq = ks[i]
+            id0 = ids_volumes0[i]
+            id1 = ids_volumes1[i]
+            cent0 = MM.all_centroids[id0]
+            cent1 = MM.all_centroids[id1]
+            lines += [gid0, gid1]
+            cols += [gid1, gid0]
+            data += [keq, keq]
+            s_grav = keq*gama*(cent1[2] - cent0[2])
+            b[gid0] += -s_grav
+            b[gid1] -= -s_grav
+            s_gravf[i] = s_grav
+
+        MM.mb.tag_set_data(sgravf_tag, MM.all_intern_faces, s_gravf)
+        MM.mb.tag_set_data(sgravv_tag, MM.all_volumes, b)
+        n = len(MM.all_volumes)
+
+        Tf = sp.csc_matrix((data,(lines,cols)), shape=(n, n))
+        Tf = Tf.tolil()
+        d1 = np.array(Tf.sum(axis=1)).reshape(1, n)[0]*(-1)
+        Tf.setdiag(d1)
+
+        As = oth.get_Tmod_by_sparse_wirebasket_matrix(Tf, self.wirebasket_numbers[0])
+        As['Tf'] = Tf
+        self.As = As
+
+        if data_loaded['gravity']:
+            self.b = b
+        else:
+            self.b = np.zeros(len(MM.all_volumes))
