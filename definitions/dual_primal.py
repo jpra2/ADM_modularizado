@@ -23,6 +23,8 @@ class DualPrimal:
         self.wirebasket_elems = gdp.wirebasket_elems
         self.wirebasket_numbers = gdp.wirebasket_numbers
         self.As = gdp.As
+        self.b = gdp.b
+        self.G = gdp.G
 
 
 def get_box(conjunto, all_centroids, limites, return_inds):
@@ -70,13 +72,13 @@ def Min_Max(e, MM):
 class GenerateDualPrimal:
 
     def __init__(self):
+
         self.tags = dict()
 
     def DualPrimal2(self, MM, Lx, Ly, Lz, mins, l2, l1, dx0, dy0, dz0):
-        t0 = time.time()
 
         tags1 = []
-
+        t0 = time.time()
         D1_tag=MM.mb.tag_get_handle("d1", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
         D2_tag=MM.mb.tag_get_handle("d2", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
         self.tags['d1'] = D1_tag
@@ -340,7 +342,14 @@ class GenerateDualPrimal:
 
         v=MM.mb.create_meshset()
         MM.mb.add_entities(v,vertices)
+
+        inte=MM.mb.get_entities_by_type_and_tag(v, types.MBHEX, np.array([D2_tag]), np.array([0]))
+        fac=MM.mb.get_entities_by_type_and_tag(v, types.MBHEX, np.array([D2_tag]), np.array([1]))
+        are=MM.mb.get_entities_by_type_and_tag(v, types.MBHEX, np.array([D2_tag]), np.array([2]))
         ver=MM.mb.get_entities_by_type_and_tag(v, types.MBHEX, np.array([D2_tag]), np.array([3]))
+        wire_elems2 = [inte, fac, are, ver]
+        wire_numbers2 = [len(inte), len(fac), len(are), len(ver)]
+
         MM.mb.tag_set_data(fine_to_primal2_classic_tag, ver, np.arange(len(ver)))
 
         for meshset in meshsets_nv2: #print(rng.intersect(MM.mb.get_entities_by_handle(meshset), ver))
@@ -362,6 +371,7 @@ class GenerateDualPrimal:
         nnf=nni+nf
         nne=nnf+na
         nnv=nne+nv
+
         l_elems=[internos, faces , arestas, vertices]
         l_ids=[0,nni,nnf,nne,nnv]
         wire_numbers1 = [ni, nf, na, nv]
@@ -372,8 +382,29 @@ class GenerateDualPrimal:
         self.wirebasket_numbers = []
         self.wirebasket_elems.append(l_elems)
         self.wirebasket_numbers.append(wire_numbers1)
+        self.wirebasket_elems.append(wire_elems2)
+        self.wirebasket_numbers.append(wire_numbers2)
+
+        lines2 = np.array([])
+        cols2 = lines2.copy()
+        data2 = lines2.copy()
+
+        n_ant = 0
+        for i, elems in enumerate(self.wirebasket_elems[1]):
+            wire_number = self.wirebasket_numbers[1][i]
+            ID_AMS = MM.mb.tag_get_data(self.tags['FINE_TO_PRIMAL1_CLASSIC'], elems, flat=True)
+            lines2 = np.append(lines2, np.arange(n_ant, n_ant+wire_number))
+            cols2 = np.append(cols2, ID_AMS)
+            data2 = np.append(data2, np.ones(wire_number))
+            n_ant += wire_number
+
+        lines2 = lines2.astype(np.int32)
+        cols2 = cols2.astype(np.int32)
+
+        self.G = sp.csc_matrix((data2, (lines2, cols2)), shape=(nv, nv))
 
     def set_bound_faces_primals(self, MM):
+
         t0 = time.time()
         meshsets_nv1 = MM.mb.get_entities_by_type_and_tag(0, types.MBENTITYSET, np.array([self.tags['PRIMAL_ID_1']]), np.array([None]))
         meshsets_nv2 = MM.mb.get_entities_by_type_and_tag(0, types.MBENTITYSET, np.array([self.tags['PRIMAL_ID_2']]), np.array([None]))
@@ -396,6 +427,7 @@ class GenerateDualPrimal:
         return meshsets_nv1, meshsets_nv2
 
     def topology(self, MM, lx, ly, lz, Lx, Ly, Lz):
+
         t0 = time.time()
         local_id_int_tag = MM.mb.tag_get_handle("local_id_internos", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
         local_id_fac_tag = MM.mb.tag_get_handle("local_fac_internos", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
@@ -550,13 +582,14 @@ class GenerateDualPrimal:
         self.faces_adjs_by_dual = faces_adjs_by_dual
 
     def get_adjs_volumes(self, MM):
+
         MM.all_intern_faces = rng.subtract(MM.all_faces, MM.all_faces_boundary)
         MM.all_intern_adjacencies = np.array([np.array(MM.mb.get_adjacencies(face, 3)) for face in MM.all_intern_faces])
         MM.all_adjacent_volumes=[]
         MM.all_adjacent_volumes.append(MM.mb.tag_get_data(MM.ID_reordenado_tag, np.array(MM.all_intern_adjacencies[:,0]), flat=True))
         MM.all_adjacent_volumes.append(MM.mb.tag_get_data(MM.ID_reordenado_tag, np.array(MM.all_intern_adjacencies[:,1]), flat=True))
 
-    def get_Tf_dep0(self, MM, *args, **kwargs):
+    def get_Tf_dep0(self, MM, *aargs, **kwargs):
 
         ni = self.wirebasket_numbers[0][0]
         nf = self.wirebasket_numbers[0][1]
@@ -615,10 +648,9 @@ class GenerateDualPrimal:
         As['T'] = Ttpfa
         self.As = As
 
-    def get_Tf(self, MM, data_loaded):
+    def get_Tf(self, MM, data_loaded, *aargs, **kwargs):
 
         b = np.zeros(len(MM.all_volumes))
-
         gamaf_tag = MM.mb.tag_get_handle('GAMAF', 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         self.tags['GAMAF'] = gamaf_tag
         sgravf_tag = MM.mb.tag_get_handle('SGRAVF', 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)

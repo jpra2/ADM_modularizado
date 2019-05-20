@@ -1,6 +1,6 @@
 from definitions.mesh_manager import MeshManager
 from definitions.dual_primal import DualPrimal
-from definitions.operators_ams import OperatorsAms1
+from definitions.operators_ams import OperatorsAms
 import time
 import os
 import shutil
@@ -84,7 +84,10 @@ print("")
 print("INICIOU PRÉ PROCESSAMENTO")
 t1 = time.time()
 dualprimal = DualPrimal(MM, Lx, Ly, Lz, mins, l2, l1, dx0, dy0, dz0, lx, ly, lz, data_loaded)
-ops1 = OperatorsAms1(MM, dualprimal)
+ops = OperatorsAms(MM, dualprimal, data_loaded)
+
+pdb.set_trace()
+
 
 tags += list(dualprimal.tags.keys())
 tags += list(MM.tags.keys())
