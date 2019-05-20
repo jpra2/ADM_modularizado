@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from definitions.mesh_manager import MeshManager
 from definitions.dual_primal import DualPrimal
 from definitions.operators_ams import OperatorsAms
@@ -6,9 +8,11 @@ import os
 import shutil
 import yaml
 import numpy as np
+import scipy.sparse as sp
 import pdb
 
-__all__ = ['dualprimal', 'MM', 'data_loaded', 'ops1']
+# __all__ = ['dualprimal', 'MM', 'data_loaded', 'ops']
+__all__ = []
 
 t0 = time.time()
 parent_dir = os.path.dirname(os.path.abspath(__file__))
@@ -78,16 +82,36 @@ r1 = data_loaded['rs']['r1']
 l1=data_loaded['Ls']['L1']
 l2=data_loaded['Ls']['L2']
 
-tags = []
-
 print("")
 print("INICIOU PRÉ PROCESSAMENTO")
 t1 = time.time()
 dualprimal = DualPrimal(MM, Lx, Ly, Lz, mins, l2, l1, dx0, dy0, dz0, lx, ly, lz, data_loaded)
 ops = OperatorsAms(MM, dualprimal, data_loaded)
+os.chdir(flying_dir)
+print('Salvando as informacoes')
+sp.save_npz('OP1_AMS', ops.OP1_AMS.tocsc())
+sp.save_npz('OP2_AMS', ops.OP2_AMS.tocsc())
+sp.save_npz('OR1_AMS', ops.OR1_AMS.tocsc())
+sp.save_npz('OR2_AMS', ops.OR2_AMS.tocsc())
+sp.save_npz('Tf', dualprimal.As['Tf'].tocsc())
+sp.save_npz('G', dualprimal.G.tocsc())
+np.save('b', dualprimal.b)
+np.save('faces_adjs_by_dual', dualprimal.faces_adjs_by_dual)
+np.save('intern_adjs_by_dual', dualprimal.intern_adjs_by_dual)
 
+list_names_variables_npz = np.array(['OP1_AMS', 'OP2_AMS', 'OR1_AMS', 'OR2_AMS',
+'Tf', 'G'])
+list_names_variables_npy = np.array(['b.npy', 'faces_adjs_by_dual.npy',
+'intern_adjs_by_dual.npy'])
+
+np.save('list_names_variables_npz', list_names_variables_npz)
+np.save('list_names_variables_npy', list_names_variables_npy)
+
+list_names_tags = np.array([])
+
+list_names_tags = np.append(list_names_tags, np.array(list(dualprimal.tags.keys())))
+list_names_tags = np.append(list_names_tags, np.array(list(MM.tags.keys())))
+
+np.save('list_names_tags', list_names_tags)
 pdb.set_trace()
-
-
-tags += list(dualprimal.tags.keys())
-tags += list(MM.tags.keys())
+print('terminou preprocess2')
