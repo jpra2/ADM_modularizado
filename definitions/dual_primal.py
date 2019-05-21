@@ -16,6 +16,7 @@ class DualPrimal:
         gdp.topology(MM, lx, ly, lz, Lx, Ly, Lz)
         gdp.get_adjs_volumes(MM)
         gdp.get_Tf(MM, data_loaded)
+        gdp.get_Tf(MM, data_loaded)
 
         self.tags = gdp.tags
         self.intern_adjs_by_dual = gdp.intern_adjs_by_dual

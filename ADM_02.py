@@ -1344,6 +1344,9 @@ for meshset in meshsets_nv1:
     M1.mb.tag_set_data(fine_to_primal1_classic_tag, elems, np.repeat(nc, len(elems)))
     M1.mb.tag_set_data(primal_id_tag1, meshset, nc)
 
+#############################################
+## malha adm 1
+
 first=False
 try:
     SOL_ADM_f = np.load('SOL_ADM_fina.npy')

@@ -85,10 +85,10 @@ class MeshManager:
     def create_tags(self):
         self.perm_tag = self.mb.tag_get_handle("PERM", 9, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         self.finos_tag = self.mb.tag_get_handle("finos", 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
-        self.wells_dirichlet_tag = self.mb.tag_get_handle("WELLS_D", 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
-        self.wells_neumann_tag = self.mb.tag_get_handle("WELLS_N", 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
-        self.press_value_tag = self.mb.tag_get_handle("P", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
-        self.vazao_value_tag = self.mb.tag_get_handle("Q", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        # self.wells_dirichlet_tag = self.mb.tag_get_handle("WELLS_D", 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
+        # self.wells_neumann_tag = self.mb.tag_get_handle("WELLS_N", 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
+        # self.press_value_tag = self.mb.tag_get_handle("P", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        # self.vazao_value_tag = self.mb.tag_get_handle("Q", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         self.all_faces_boundary_tag = self.mb.tag_get_handle("FACES_BOUNDARY", 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
         self.area_tag = self.mb.tag_get_handle("AREA", 3, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         self.GLOBAL_ID_tag = self.mb.tag_get_handle("G_ID_tag", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
@@ -98,14 +98,16 @@ class MeshManager:
         self.cent_tag = self.mb.tag_get_handle("CENT", 3, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         self.ids_volumes_tag = self.mb.tag_get_handle("IDS_VOLUMES", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
         self.mb.tag_set_data(self.ids_volumes_tag, self.all_volumes, np.arange(len(self.all_volumes)))
+        self.ids_faces_tag = self.mb.tag_get_handle("IDS_FACES", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
+        self.mb.tag_set_data(self.ids_faces_tag, self.all_faces, np.arange(len(self.all_faces)))
 
         self.tags = dict()
         self.tags['PERM'] = self.perm_tag
         self.tags['finos'] = self.finos_tag
-        self.tags['WELLS_D'] = self.wells_dirichlet_tag
-        self.tags['WELLS_N'] = self.wells_neumann_tag
-        self.tags['P'] = self.press_value_tag
-        self.tags['Q'] = self.vazao_value_tag
+        # self.tags['WELLS_D'] = self.wells_dirichlet_tag
+        # self.tags['WELLS_N'] = self.wells_neumann_tag
+        # self.tags['P'] = self.press_value_tag
+        # self.tags['Q'] = self.vazao_value_tag
         self.tags['FACES_BOUNDARY'] = self.all_faces_boundary_tag
         self.tags['AREA'] = self.area_tag
         self.tags['G_ID_tag'] = self.GLOBAL_ID_tag
@@ -114,6 +116,7 @@ class MeshManager:
         self.tags['K_EQ'] = self.k_eq_tag
         self.tags['CENT'] = self.cent_tag
         self.tags['IDS_VOLUMES'] = self.ids_volumes_tag
+        self.tags['IDS_FACES'] = self.ids_faces_tag
 
     def create_vertices(self, coords):
         new_vertices = self.mb.create_vertices(coords)
