@@ -1,12 +1,14 @@
-import pdb
+# import pdb
+# import cProfile
 
 # import definitions.preprocess
 # import definitions.mad_mesh
 # import definitions.mad_mesh_2
 
+# cp = cProfile.Profile()
+# cp.enable()
 # from definitions.preprocess2 import *
 from mad_mesh_generator.preprocess3 import *
-# from definitions.mad_meshv2 import MadMesh1
 #
 # malha_adm = MadMesh1(MM)
 # del MadMesh1
@@ -15,4 +17,5 @@ from mad_mesh_generator.preprocess3 import *
 #
 #
 #
-pdb.set_trace()
+# cp.disable()
+# cp.print_stats()

@@ -1,12 +1,31 @@
 import time
+import pdb
 import numpy as np
-from utils import pymoab_utils as utpy
+import os
 from pymoab import types, rng
 import scipy.sparse as sp
+
+parent_dir = os.path.dirname(os.path.abspath(__file__))
+parent_parent_dir = os.path.dirname(parent_dir)
+input_dir = os.path.join(parent_parent_dir, 'input')
+flying_dir = os.path.join(parent_parent_dir, 'flying')
+mono_dir = os.path.join(flying_dir, 'monofasico')
+bif_dir = os.path.join(flying_dir, 'bifasico')
+
+os.chdir(parent_parent_dir)
+
+# from utils import pymoab_utils as utpy
+import utils.pymoab_utils as utpy
 from utils.others_utils import OtherUtils as oth
-import pdb
+
+os.chdir(flying_dir)
+
+
+
+parent_dir = os.path.dirname(os.path.abspath(__file__))
 
 __all__ = ['DualPrimal']
+
 
 class DualPrimal:
 
@@ -15,7 +34,6 @@ class DualPrimal:
         gdp.DualPrimal2(MM, Lx, Ly, Lz, mins, l2, l1, dx0, dy0, dz0)
         gdp.topology(MM, lx, ly, lz, Lx, Ly, Lz)
         gdp.get_adjs_volumes(MM)
-        gdp.get_Tf(MM, data_loaded)
         gdp.get_Tf(MM, data_loaded)
 
         self.tags = gdp.tags
@@ -36,16 +54,20 @@ def get_box(conjunto, all_centroids, limites, return_inds):
     inds0 = np.where(all_centroids[:,0] > limites[0,0])[0]
     inds1 = np.where(all_centroids[:,1] > limites[0,1])[0]
     inds2 = np.where(all_centroids[:,2] > limites[0,2])[0]
-    c1 = set(inds0) & set(inds1) & set(inds2)
+    # c1 = set(inds0) & set(inds1) & set(inds2)
+    c1 = np.intersect1d(inds0, np.intersect1d(inds1, inds2))
     inds0 = np.where(all_centroids[:,0] < limites[1,0])[0]
     inds1 = np.where(all_centroids[:,1] < limites[1,1])[0]
     inds2 = np.where(all_centroids[:,2] < limites[1,2])[0]
-    c2 = set(inds0) & set(inds1) & set(inds2)
-    inds_vols = list(c1 & c2)
+    # c2 = set(inds0) & set(inds1) & set(inds2)
+    c2 = np.intersect1d(inds0, np.intersect1d(inds1, inds2))
+    # inds_vols = list(c1 & c2)
+    inds_vols = np.intersect1d(c1, c2)
     if return_inds:
         return (rng.Range(np.array(conjunto)[inds_vols]),inds_vols)
     else:
         return rng.Range(np.array(conjunto)[inds_vols])
+
 
 def add_topology(MM, conj_vols,tag_local,lista):
     all_fac=np.uint64(MM.mtu.get_bridge_adjacencies(conj_vols, 2 ,2))
@@ -62,6 +84,7 @@ def add_topology(MM, conj_vols,tag_local,lista):
     lista.append(adjs2)
     lista.append(adjsg1)
     lista.append(adjsg2)
+
 
 def Min_Max(e, MM):
     verts = MM.mb.get_connectivity(e)

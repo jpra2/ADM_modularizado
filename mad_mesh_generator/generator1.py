@@ -10,8 +10,10 @@ from pymoab import types, rng, topo_util
 import numpy as np
 import sympy
 import scipy.sparse as sp
+from utils.others_utils import OtherUtils as oth
 
-__all__ = []
+
+__all__ = ['mesh', 'SOL_ADM_fina', 'data_loaded']
 
 parent_dir = os.path.dirname(os.path.abspath(__file__))
 parent_parent_dir = os.path.dirname(parent_dir)
@@ -172,6 +174,7 @@ for i in bvid:
 volumes_id = rng.Range(volumes_id)
 
 intermediarios=rng.unite(volumes_id,volumes_in)
+mesh.intermediarios = intermediarios
 meshset_intermediarios = mesh.mb.create_meshset()
 mesh.mb.add_entities(meshset_intermediarios, intermediarios)
 intermediarios_tag = mesh.mb.tag_get_handle('intermediarios', 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
@@ -532,6 +535,108 @@ def get_OP1_ADM(mesh, n1, n2):
 
 mesh.matrices['OP1_ADM'] = get_OP1_ADM(mesh, n1, n2)
 
+def get_OR1_ADM(mesh, n1):
+    l1 = mesh.mb.tag_get_data(L1_ID_tag, mesh.all_volumes, flat=True)
+    c1 = mesh.mb.tag_get_data(mesh.tags['ID_reord_tag'], mesh.all_volumes, flat=True)
+    d1 = np.ones(len(l1))
+    OR1_ADM = sp.csc_matrix((d1, (l1, c1)), shape=(n1, len(mesh.all_volumes)))
+    return OR1_ADM
+
+mesh.matrices['OR1_ADM'] = get_OR1_ADM(mesh, n1)
+
+def get_OR2_ADM(mesh, n1, n2):
+    l2 = mesh.mb.tag_get_data(L2_ID_tag, mesh.all_volumes, flat=True)
+    c2 = mesh.mb.tag_get_data(L1_ID_tag, mesh.all_volumes, flat=True)
+    d2 = np.ones(len(l2))
+    OR_ADM_2 = sp.csc_matrix((d2,(l2,c2)),shape=(n2,n1))
+    return OR_ADM_2
+
+mesh.matrices['OR2_ADM'] = get_OR2_ADM(mesh, n1, n2)
+
+def get_OP2_ADM(mesh, n1, n2):
+
+    OP3 = mesh.matrices['OP2_AMS'].copy()
+
+    nivel_0=mesh.mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([L3_ID_tag]), np.array([1]))
+    nivel_1=mesh.mb.get_entities_by_type_and_tag(mesh.mv, types.MBHEX, np.array([L3_ID_tag]), np.array([2]))
+    nivel_0_e_1=rng.unite(nivel_0,nivel_1)
+
+    nivel_0v=mesh.mb.get_entities_by_type_and_tag(mesh.mv, types.MBHEX, np.array([L3_ID_tag]), np.array([1]))
+    nivel_0_e_1_v=rng.unite(nivel_0v,nivel_1)
+    IDs_AMS1=mesh.mb.tag_get_data(mesh.tags['FINE_TO_PRIMAL1_CLASSIC'], nivel_0_e_1_v, flat=True)
+    OP3[IDs_AMS1]=sp.csc_matrix((1,OP3.shape[1]))
+
+    IDs_ADM_2=mesh.mb.tag_get_data(L2_ID_tag, mesh.wirebasket_elems[1][3], flat=True)
+    IDs_AMS_2=mesh.mb.tag_get_data(mesh.tags['FINE_TO_PRIMAL2_CLASSIC'],mesh.wirebasket_elems[1][3], flat=True)
+    lp=IDs_AMS_2
+    cp=IDs_ADM_2
+    dp=np.repeat(1,len(lp))
+    permutc=sp.csc_matrix((dp,(lp,cp)),shape=(len(mesh.wirebasket_elems[1][3]),n2))
+    opad3=OP3*permutc
+
+    IDs_ADM_1=mesh.mb.tag_get_data(L1_ID_tag,vertices, flat=True)
+    IDs_AMS_1=mesh.mb.tag_get_data(mesh.tags['FINE_TO_PRIMAL1_CLASSIC'], mesh.wirebasket_elems[0][3], flat=True)
+
+    lp=IDs_ADM_1
+    cp=IDs_AMS_1
+    dp=np.repeat(1,len(lp))
+    permutl=sp.csc_matrix((dp,(lp,cp)),shape=(n1,len(vertices)))
+    opad3=permutl*opad3
+
+    m=sp.find(opad3)
+    l1=m[0]
+    c1=m[1]
+    d1=m[2]
+
+    ID_global1=mesh.mb.tag_get_data(L1_ID_tag,nivel_0_e_1, flat=True)
+    IDs_ADM1=mesh.mb.tag_get_data(L2_ID_tag,nivel_0_e_1, flat=True)
+
+    l1=np.concatenate([l1,ID_global1])
+    c1=np.concatenate([c1,IDs_ADM1])
+    d1=np.concatenate([d1,np.ones(len(nivel_0_e_1))])
+    opad3=sp.csc_matrix((d1,(l1,c1)),shape=(n1,n2))
+
+    return opad3
+
+mesh.matrices['OP2_ADM'] = get_OP2_ADM(mesh, n1, n2)
+
+values_d = mesh.mb.tag_get_data(mesh.tags['P'], volumes_d, flat=True)
+values_n = mesh.mb.tag_get_data(mesh.tags['Q'], volumes_n, flat=True)
+
+Tf2 = mesh.matrices['Tf'].copy()
+b2 = mesh.matrices['b'].copy()
+
+ids_d = mesh.mb.tag_get_data(mesh.tags['ID_reord_tag'], volumes_d, flat=True)
+Tf2, b = oth.set_boundary_dirichlet_matrix_v02(ids_d, values_d, b2, Tf2)
+
+if len(volumes_n) > 0:
+    ids_n = mesh.mb.tag_get_data(mesh.tags['ID_reord_tag'], volumes_n, flat=True)
+    b2 = oth.set_boundary_neumann_v02(ids_n, values_n, b2)
 
 
-pdb.set_trace()
+def get_solution_adm(mesh, Tf2, b2):
+
+    TADM1 = mesh.matrices['OR1_ADM']*Tf2*mesh.matrices['OP1_ADM']
+    TADM2 = mesh.matrices['OR2_ADM']*TADM1*mesh.matrices['OP2_ADM']
+    bADM1 = mesh.matrices['OR1_ADM']*b2
+    bADM2 = mesh.matrices['OR2_ADM']*bADM1
+    PMS = sp.linalg.spsolve(TADM2, bADM2)
+    Pms = mesh.matrices['OP2_ADM']*PMS
+    Pms = mesh.matrices['OP1_ADM']*PMS
+
+    return Pms
+
+pms = get_solution_adm(mesh, Tf2, b2)
+SOL_ADM_fina = pms
+pms_tag = mesh.mb.tag_get_handle('PMS2', 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+mesh.tags['PMS2'] = pms_tag
+wire_elems = []
+for elems in mesh.wirebasket_elems[0]:
+    wire_elems += list(elems)
+
+mesh.mb.tag_set_data(pms_tag, wire_elems, pms)
+os.chdir(flying_dir)
+np.save('SOL_ADM_fina', pms)
+mesh.mb.write_file('malha_adm_1.vtk', [vv])
+mesh.vv = vv
+mesh.volumes_f = volumes_f

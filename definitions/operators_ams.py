@@ -2,6 +2,7 @@ from definitions.functions1 import lu_inv4, solve_block_matrix, lu_inv2
 import scipy.sparse as sp
 import numpy as np
 import pdb
+from definitions import monotone_methods as monot
 
 
 class OperatorsAms:
@@ -19,7 +20,7 @@ class OperatorsAms:
         self.OP1_AMS = ops.get_op1_AMS_TPFA(MM.mb, dualprimal.faces_adjs_by_dual, dualprimal.intern_adjs_by_dual, dualprimal.wirebasket_numbers[0][0], dualprimal.wirebasket_numbers[0][1], MM.k_eq_tag, dualprimal.As)
         self.OR1_AMS = ops.get_OR1_AMS(MM, dualprimal)
         ops = Operators2()
-        self.OP2_AMS = ops.get_op2_AMS(self.OR1_AMS, dualprimal.As['Tf'], self.OP1_AMS, dualprimal.G, data_loaded['MPFA'], dualprimal.wirebasket_elems[1], dualprimal.wirebasket_numbers[1], dualprimal.wirebasket_numbers[0][3])
+        self.OP2_AMS = ops.get_op2_AMS(self.OR1_AMS, dualprimal.As['Tf'], self.OP1_AMS, dualprimal.G, data_loaded['MPFA'], dualprimal.wirebasket_elems[1], dualprimal.wirebasket_numbers[1], dualprimal.wirebasket_numbers[0][3], MM)
         self.OR2_AMS = ops.get_or2_AMS(MM, dualprimal.tags['FINE_TO_PRIMAL1_CLASSIC'], dualprimal.tags['FINE_TO_PRIMAL2_CLASSIC'], dualprimal.wirebasket_elems[0][3], dualprimal.wirebasket_elems[1][3])
 
 
@@ -146,7 +147,7 @@ class Operators2:
 
         self.tags = dict()
 
-    def get_op2_AMS(self, OR1_AMS, Tf, OP1_AMS, G, MPFA, wire_elems2, wire_numbers2, nv1):
+    def get_op2_AMS(self, OR1_AMS, Tf, OP1_AMS, G, MPFA, wire_elems2, wire_numbers2, nv1, MM):
 
         T_AMS = OR1_AMS*Tf*OP1_AMS
         W_AMS = G*T_AMS*G.transpose()

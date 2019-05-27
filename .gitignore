@@ -5,6 +5,11 @@
 *.h5m
 *.vtk
 *.msh
+*.prof
+*.cprof
+*.lprof
+*monotone_methods.py
+
 
 *gmsh
 *ADM_mod_2-master
