@@ -613,6 +613,8 @@ if len(volumes_n) > 0:
     ids_n = mesh.mb.tag_get_data(mesh.tags['ID_reord_tag'], volumes_n, flat=True)
     b2 = oth.set_boundary_neumann_v02(ids_n, values_n, b2)
 
+mesh.matrices['Tf2'] = Tf2
+mesh.matrices['b2'] = b2
 
 def get_solution_adm(mesh, Tf2, b2):
 
@@ -622,7 +624,7 @@ def get_solution_adm(mesh, Tf2, b2):
     bADM2 = mesh.matrices['OR2_ADM']*bADM1
     PMS = sp.linalg.spsolve(TADM2, bADM2)
     Pms = mesh.matrices['OP2_ADM']*PMS
-    Pms = mesh.matrices['OP1_ADM']*PMS
+    Pms = mesh.matrices['OP1_ADM']*Pms
 
     return Pms
 

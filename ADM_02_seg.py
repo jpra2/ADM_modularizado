@@ -84,6 +84,7 @@ class MeshManager:
         self.phi_tag = self.mb.tag_get_handle("PHI", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         self.k_eq_tag = self.mb.tag_get_handle("K_EQ", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
 
+
     def create_vertices(self, coords):
         new_vertices = self.mb.create_vertices(coords)
         self.all_nodes.append(new_vertices)
@@ -189,10 +190,6 @@ class MeshManager:
         self.mb.tag_set_data(verif_perm_tag, vols2, np.repeat(k02, len(vols2)))
         phi = 0.3
         self.mb.tag_set_data(self.phi_tag, self.all_volumes, np.repeat(phi, len(self.all_volumes)))
-
-        vv = self.mb.create_meshset()
-        self.mb.add_entities(vv, self.all_volumes)
-        self.mb.write_file('testtt.vtk', [vv])
 
     def set_area(self, face):
         points = self.mtu.get_bridge_adjacencies(face, 2, 0)
@@ -419,7 +416,11 @@ def get_box(conjunto, all_centroids, limites, return_inds):
 
 #--------------Início dos parâmetros de entrada-------------------
 # M1= MeshManager('27x27x27.msh')          # Objeto que armazenará as informações da malha
-M1= MeshManager('30x30x45.msh')          # Objeto que armazenará as informações da malha
+input_file = '30x30x45'
+ext_msh_in = input_file + '.msh'
+ext_h5m_out = input_file + '_malha_adm.h5m'
+
+M1= MeshManager(ext_msh_in)          # Objeto que armazenará as informações da malha
 all_volumes=M1.all_volumes
 
 # Ci = n: Ci -> Razão de engrossamento ni nível i (em relação ao nível i-1),
@@ -427,6 +428,8 @@ all_volumes=M1.all_volumes
 
 M1.all_centroids=np.array([M1.mtu.get_average_position([v]) for v in all_volumes])
 all_centroids = M1.all_centroids
+cent_tag = M1.mb.tag_get_handle('CENT', 3, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+M1.mb.tag_set_data(cent_tag, M1.all_volumes, all_centroids)
 
 nx=30
 ny=30
@@ -868,6 +871,8 @@ t0=time.time()
 # Esse bloco é executado apenas uma vez em um problema bifásico, sua eficiência
 # não é criticamente importante.
 L2_meshset=M1.mb.create_meshset()       # root Meshset
+l2_meshset_tag = M1.mb.tag_get_handle('L2_MESHSET', 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
+M1.mb.tag_set_data(l2_meshset_tag, 0, L2_meshset)
 
 ###########################################################################################
 #jp:modifiquei as tags abaixo para sparse
@@ -2000,14 +2005,14 @@ for m2 in meshset_by_L2:
             else:
                 max_grad=get_max_grad(m1)
             M1.mb.tag_set_data(grad_tag,elem_by_L1,np.repeat(max_grad/grad_p_res,len(elem_by_L1)))
-            if med1_x<val_barreira or med1_x>val_canal or var<1 or r_k_are_ver>100:
+            #if med1_x<val_barreira or med1_x>val_canal or raz>raz_lim or var<1 or r_k_are_ver>100 or (max_grad>20*grad_p_res and (r_k_are_ver>200 or var2>10000)) or (max_grad>5*grad_p_res and r_k_are_ver>10000) or (max_grad>20*grad_p_res and var<15) or (max_grad>50*grad_p_res and var<25) or ar>1000:
             #if med1_x<val_barreira or med1_x>val_canal or raz>raz_lim or (max_grad>35*grad_p_res and (r_k_are_ver>500 or var<2 or (r_k_are_ver>100 and ar>5)) or ar3>3) or (max_grad>20*grad_p_res and (r_k_are_ver>400 or ar>100 or var2>200)) or var<1 or (r_k_are_ver>5000 and var<2) or r_k_are_ver>10000:
             #if med1_x<val_barreira or med1_x>val_canal or (ar3>20 and var<1) or (r_k_are_ver>10000 and ar4>0.01) or (ar4>0.05 and (ar3>2 or r_k_are_ver>100 or ar>20 or var<3 or med1_x<vt)) or (r_k_are_ver>2000 and var<4) or ar5<30:
             #if (ar5<50 and ar4>0.5) or (ar5<40 and ar4>0.4) or (ar5<30 and ar4>0.3) or var<1 or ar6<20: # bom _______ or ((ar5<30 or var<5) and ar4>0.01)
             #if ar4>0.2 or (ar6<200 and ar4>0.2) or (ar6<80 and ar4>0.05) or ((var<10 and a8>10) and ar4>0.04) or ar6<20 or var<1 or a8>100 or (a7>0.5 and ar4>0.02) or a7>1:
             #if (ar4/a9>0.02 and (ar6<40 or a9<0.05 or r_k_are_ver>10000)) or (ar4/a9>0.04 and (ar6<40 or a9<0.1 or r_k_are_ver>5000)) or (ar4/a9>0.2 and (ar6<300 or a9<0.3 or r_k_are_ver>1000)) or (ar4/a9>0.3 and (ar6<400 or a9<0.5 or r_k_are_ver>500)):#excelente
             #if (ar4/a9>0.02 and (ar6<40 or a9<0.05 or r_k_are_ver>10000)) or (ar4/a9>0.04 and (ar6<40 or a9<0.1 or r_k_are_ver>5000)) or (ar4/a9>0.1 and (ar6<100 and a9<0.4 or r_k_are_ver>100)) or (ar4/a9>0.2 and (ar6<300 and a9<0.3 and r_k_are_ver>1000)) or (ar4/a9>0.25 and (ar6<400 or a9<0.5 or r_k_are_ver>500)):#excelente
-            # if (ar4/a9>0.02 and (ar6<40 or a9<0.05 or r_k_are_ver>10000)) or (ar4/a9>0.04 and (ar6<40 or a9<0.1 or r_k_are_ver>5000)) or (ar4/a9>0.1 and (ar6<100 and a9<0.4 and r_k_are_ver>100)) or (ar4/a9>0.2 and (ar6<300 and a9<0.3 and r_k_are_ver>1000)) or (ar4/a9>0.25 and (ar6<400 or a9<0.5 or r_k_are_ver>500)):
+            if (ar4/a9>0.02 and (ar6<40 or a9<0.05 or r_k_are_ver>10000)) or (ar4/a9>0.04 and (ar6<40 or a9<0.1 or r_k_are_ver>5000)) or (ar4/a9>0.1 and (ar6<100 and a9<0.4 and r_k_are_ver>100)) or (ar4/a9>0.2 and (ar6<300 and a9<0.3 and r_k_are_ver>1000)) or (ar4/a9>0.25 and (ar6<400 or a9<0.5 or r_k_are_ver>500)):
                 #if ar>20 or r_k_are_ver>2000:
                 aux=1
                 tem_poço_no_vizinho=True
@@ -2246,12 +2251,10 @@ l1=M1.mb.tag_get_data(fine_to_primal1_classic_tag, M1.all_volumes, flat=True)
 c1=M1.mb.tag_get_data(M1.ID_reordenado_tag, M1.all_volumes, flat=True)
 d1=np.ones((1,len(l1)),dtype=np.int)[0]
 OR_AMS=csc_matrix((d1,(l1,c1)),shape=(nv,len(M1.all_volumes)))
-scipy.sparse.save_npz('OR_AMS', OR_AMS)
-
 
 OP_AMS=PAD
 if first:
-    scipy.sparse.save_npz('OP_AMS.npz', OP_AMS)
+    scipy.sparse.save_npz('OP_AMS.npz',OP_AMS)
 
 v=M1.mb.create_meshset()
 M1.mb.add_entities(v,vertices)
@@ -2929,6 +2932,9 @@ for i in range(int(max_iter/500)):
 x1=(x1.toarray()).transpose()[0]
 if first:
     np.save('SOL_ADM_fina.npy', x1)
+M1.mb.write_file(ext_h5m_out)
+np.save('faces_adjs_by_dual', faces_adjs_by_dual)
+np.save('intern_adjs_by_dual', intern_adjs_by_dual)
 # import pdb; pdb.set_trace()
 # # 18  ADM->3.407s TPFA->2.515s
 # # 30  ADM->22.02 TPFA->12.86s

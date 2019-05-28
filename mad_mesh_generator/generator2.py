@@ -15,7 +15,7 @@ class Generator2:
         gam2 = GenerateAdmMesh2(mesh)
         gam2.definir_parametros(mesh)
         gam2.set_erro_aprox(mesh, SOL_ADM_fina)
-        gam2.generate_adm_mesh(mesh, SOL_ADM_fina)
+        mesh.n1, mesh.n2 = gam2.generate_adm_mesh(mesh, SOL_ADM_fina)
         #########################
         # pr.disable()
         # pr.print_stats()
@@ -330,3 +330,15 @@ class GenerateAdmMesh2:
                     mesh.mb.tag_set_data(L2_ID_tag, elem_by_L1, np.repeat(n2,len(elem_by_L1)))
                     mesh.mb.tag_set_data(L1_ID_tag, elem_by_L1, np.repeat(n1,len(elem_by_L1)))
                     mesh.mb.tag_set_data(L3_ID_tag, elem_by_L1, np.repeat(3,len(elem_by_L1)))
+
+        tags = [L1_ID_tag, L2_ID_tag]
+        for tag in tags:
+            try:
+                all_gids = mesh.mb.tag_get_data(tag, mesh.all_volumes, flat=True)
+            except:
+                pdb.set_trace()
+            minim = min(all_gids)
+            all_gids -= minim
+            mesh.mb.tag_set_data(tag, mesh.all_volumes, all_gids)
+
+        return n1, n2
