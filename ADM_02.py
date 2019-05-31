@@ -52,8 +52,8 @@ class MeshManager:
             "Global_ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_DENSE, True)'''
 
         self.create_tags()
-        # self.set_k_and_phi_structured_spe10()
-        self.set_k()
+        self.set_k_and_phi_structured_spe10()
+        # self.set_k()
         #self.set_information("PERM", self.all_volumes, 3)
         self.get_boundary_faces()
         self.gravity = False
@@ -1970,7 +1970,7 @@ for m2 in meshset_by_L2:
 
             k_ares_max=M1.mb.tag_get_data(M1.perm_tag,ares)[:,0].max()
             k_ares_min=M1.mb.tag_get_data(M1.perm_tag,ares)[:,0].min()
-            r_k_are_ver=float((k_ares_max-k_ares_min)/k_vert)
+            #r_k_are_ver=float((k_ares_max-k_ares_min)/k_vert)
             #M1.mb.tag_set_data(ares_tag, ares, np.repeat(r_k_are_ver,len(ares)))
             r_k_are_ver=float(M1.mb.tag_get_data(ares2_tag,ver_1))
             var=float(M1.mb.tag_get_data(var_tag,ver_1))
