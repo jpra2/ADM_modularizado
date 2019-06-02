@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 import sympy
 import cython
 from scipy.sparse import csc_matrix, csr_matrix, lil_matrix, vstack, hstack, linalg, identity, find
+from ADM_02 import *
 
 __all__ = []
 
@@ -420,7 +421,8 @@ input_file = '30x30x45'
 ext_msh_in = input_file + '.msh'
 ext_h5m_out = input_file + '_malha_adm.h5m'
 
-M1= MeshManager(ext_msh_in)          # Objeto que armazenará as informações da malha
+# M1 esta sendo importado de ADM_02
+# M1= MeshManager(ext_msh_in)          # Objeto que armazenará as informações da malha
 all_volumes=M1.all_volumes
 
 # Ci = n: Ci -> Razão de engrossamento ni nível i (em relação ao nível i-1),

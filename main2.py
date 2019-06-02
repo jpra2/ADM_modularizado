@@ -29,5 +29,5 @@ def remover():
 
 remover()
 
-from ADM_02 import *
+# from ADM_02 import *
 from ADM_02_seg import *

@@ -9,7 +9,7 @@ import sympy
 import cython
 from scipy.sparse import csc_matrix, csr_matrix, lil_matrix, vstack, hstack, linalg, identity, find
 
-__all__ = []
+__all__ = ['M1']
 
 class MeshManager:
     def __init__(self,mesh_file, dim=3):
