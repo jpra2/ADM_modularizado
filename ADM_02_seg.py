@@ -52,8 +52,8 @@ class MeshManager:
             "Global_ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_DENSE, True)'''
 
         self.create_tags()
-        self.set_k_and_phi_structured_spe10()
-        # self.set_k()
+        # self.set_k_and_phi_structured_spe10()
+        self.set_k()
         #self.set_information("PERM", self.all_volumes, 3)
         self.get_boundary_faces()
         self.gravity = False

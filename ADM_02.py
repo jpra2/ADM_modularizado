@@ -52,8 +52,8 @@ class MeshManager:
             "Global_ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_DENSE, True)'''
 
         self.create_tags()
-        self.set_k_and_phi_structured_spe10()
-        # self.set_k()
+        # self.set_k_and_phi_structured_spe10()
+        self.set_k()
         #self.set_information("PERM", self.all_volumes, 3)
         self.get_boundary_faces()
         self.gravity = False
@@ -83,6 +83,7 @@ class MeshManager:
         self.ID_reordenado_tag = self.mb.tag_get_handle("ID_reord_tag", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
         self.phi_tag = self.mb.tag_get_handle("PHI", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         self.k_eq_tag = self.mb.tag_get_handle("K_EQ", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        self.kharm_tag = self.mb.tag_get_handle("KHARM", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
 
     def create_vertices(self, coords):
         new_vertices = self.mb.create_vertices(coords)
@@ -251,6 +252,7 @@ class MeshManager:
         vol_to_pos=dict(zip(self.all_volumes,range(len(self.all_volumes))))
         cont=0
         K_eq=[]
+        kharm = []
         for f in self.all_faces:
             adjs=ADJs[cont]
             adjsv=ADJsv[cont]
@@ -284,10 +286,13 @@ class MeshManager:
                 #s_gr = self.gama*keq*(centroid2[2]-centroid1[2])
                 keq = k_harm*area/(self.mi*norm)
 
+                kharm.append(k_harm*area/norm)
                 K_eq.append(keq)
             else:
                 K_eq.append(0.0)
+                kharm.append(0.0)
         self.mb.tag_set_data(self.k_eq_tag, self.all_faces, K_eq)
+        self.mb.tag_set_data(self.kharm_tag, self.all_faces, kharm)
 
     def set_k_and_phi_structured_spe10(self):
         ks = np.load('spe10_perms_and_phi.npz')['perms']
