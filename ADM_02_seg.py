@@ -430,8 +430,8 @@ all_volumes=M1.all_volumes
 
 # M1.all_centroids=np.array([M1.mtu.get_average_position([v]) for v in all_volumes])
 all_centroids = M1.all_centroids
-# cent_tag = M1.mb.tag_get_handle('CENT', 3, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
-# M1.mb.tag_set_data(cent_tag, M1.all_volumes, all_centroids)
+cent_tag = M1.mb.tag_get_handle('CENT', 3, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+M1.mb.tag_set_data(cent_tag, M1.all_volumes, all_centroids)
 
 nx=30
 ny=30
