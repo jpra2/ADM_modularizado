@@ -428,10 +428,10 @@ all_volumes=M1.all_volumes
 # Ci = n: Ci -> Razão de engrossamento ni nível i (em relação ao nível i-1),
 # n -> número de blocos em cada uma das 3 direções (mesmo número em todas)
 
-M1.all_centroids=np.array([M1.mtu.get_average_position([v]) for v in all_volumes])
+# M1.all_centroids=np.array([M1.mtu.get_average_position([v]) for v in all_volumes])
 all_centroids = M1.all_centroids
-cent_tag = M1.mb.tag_get_handle('CENT', 3, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
-M1.mb.tag_set_data(cent_tag, M1.all_volumes, all_centroids)
+# cent_tag = M1.mb.tag_get_handle('CENT', 3, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+# M1.mb.tag_set_data(cent_tag, M1.all_volumes, all_centroids)
 
 nx=30
 ny=30
@@ -685,7 +685,7 @@ def lu_inv4(M,lines):
 
 
 all_volumes=M1.all_volumes
-print("Volumes:",all_volumes)
+# print("Volumes:",all_volumes)
 verts = M1.mb.get_connectivity(all_volumes[0])     #Vértices de um elemento da malha fina
 coords = np.array([M1.mb.get_coords([vert]) for vert in verts])
 xmin, xmax = coords[0][0], coords[0][0]
