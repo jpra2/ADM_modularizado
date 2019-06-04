@@ -420,6 +420,7 @@ def get_box(conjunto, all_centroids, limites, return_inds):
 input_file = '30x30x45'
 ext_msh_in = input_file + '.msh'
 ext_h5m_out = input_file + '_malha_adm.h5m'
+ext_vtk_out = input_file + 'saida.vtk'
 
 # M1 esta sendo importado de ADM_02
 # M1= MeshManager(ext_msh_in)          # Objeto que armazenará as informações da malha
@@ -2934,7 +2935,20 @@ for i in range(int(max_iter/500)):
 x1=(x1.toarray()).transpose()[0]
 if first:
     np.save('SOL_ADM_fina.npy', x1)
+
+finos_0_meshset = M1.mb.create_meshset()
+finos_0 = M1.mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([L3_ID_tag]), np.array([1]))
+M1.mb.add_entities(finos_0_meshset, finos_0)
+finos_0_tag = M1.mb.tag_get_handle('finos0', 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
+M1.mb.tag_set_data(finos_0_tag, 0, finos_0_meshset)
+intermediarios_meshset = M1.mb.create_meshset()
+intermediarios = M1.mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([L3_ID_tag]), np.array([2]))
+M1.mb.add_entities(intermediarios_meshset, intermediarios)
+intermediarios_tag = M1.mb.tag_get_handle('intermediarios', 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
+M1.mb.tag_set_data(intermediarios_tag, 0, intermediarios_meshset)
+
 M1.mb.write_file(ext_h5m_out)
+M1.mb.write_file(ext_vtk_out, [av])
 np.save('faces_adjs_by_dual', faces_adjs_by_dual)
 np.save('intern_adjs_by_dual', intern_adjs_by_dual)
 # import pdb; pdb.set_trace()
