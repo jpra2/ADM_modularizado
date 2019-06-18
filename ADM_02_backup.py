@@ -9,7 +9,8 @@ import sympy
 import cython
 from scipy.sparse import csc_matrix, csr_matrix, lil_matrix, vstack, hstack, linalg, identity, find
 
-__all__ = ['M1']
+__all__ = ['M1', 'bvn', 'bvd', 'nx', 'ny', 'nz', 'lx', 'ly', 'lz', 'x1', 'y1', 'z1', 'input_file',
+           'l1', 'l2']
 
 class MeshManager:
     def __init__(self,mesh_file, dim=3):
@@ -424,7 +425,12 @@ def get_box(conjunto, all_centroids, limites, return_inds):
 
 #--------------Início dos parâmetros de entrada-------------------
 # M1= MeshManager('27x27x27.msh')          # Objeto que armazenará as informações da malha
-M1= MeshManager('30x30x45.msh')          # Objeto que armazenará as informações da malha
+input_file = '45x45x45'
+ext_msh_in = input_file + '.msh'
+ext_h5m_out = input_file + '_malha_adm.h5m'
+ext_vtk_out = input_file + 'saida.vtk'
+M1= MeshManager(ext_msh_in)          # Objeto que armazenará as informações da malha
+
 all_volumes=M1.all_volumes
 
 # Ci = n: Ci -> Razão de engrossamento ni nível i (em relação ao nível i-1),
@@ -433,8 +439,8 @@ all_volumes=M1.all_volumes
 M1.all_centroids=np.array([M1.mtu.get_average_position([v]) for v in all_volumes])
 all_centroids = M1.all_centroids
 
-nx=30
-ny=30
+nx=45
+ny=45
 nz=45
 
 lx=20
@@ -551,7 +557,7 @@ def lu_inv(M):
 '''
 def lu_inv2(M):
     L=M.shape[0]
-    s=1000
+    s=100
     n=int(L/s)
     r=int(L-int(L/s)*s)
     tinv=time.time()
@@ -1414,20 +1420,25 @@ for meshset in meshsets_nv1:
 #############################################
 ## malha adm 1
 
-first=False
-try:
-    SOL_ADM_f = np.load('SOL_ADM_fina.npy')
-    res=np.load('residuo.npy')
-    if len(SOL_ADM_f)!=len(M1.all_volumes):
-        print("criará o vetor para refinamento")
-        SOL_ADM_f = np.repeat(1,len(M1.all_volumes))
-    else:
-        print("leu o vetor criado")
-except:
-    first=True
-    print("criará o vetor para refinamento")
-    SOL_ADM_f = np.repeat(1,len(M1.all_volumes))
-    res = np.repeat(1,len(M1.all_volumes))
+# first=False
+# try:
+#     SOL_ADM_f = np.load('SOL_ADM_fina.npy')
+#     res=np.load('residuo.npy')
+#     if len(SOL_ADM_f)!=len(M1.all_volumes):
+#         print("criará o vetor para refinamento")
+#         SOL_ADM_f = np.repeat(1,len(M1.all_volumes))
+#     else:
+#         print("leu o vetor criado")
+# except:
+#     first=True
+#     print("criará o vetor para refinamento")
+#     SOL_ADM_f = np.repeat(1,len(M1.all_volumes))
+#     res = np.repeat(1,len(M1.all_volumes))
+# first = True
+first=True
+print("criará o vetor para refinamento")
+SOL_ADM_f = np.repeat(1,len(M1.all_volumes))
+res = np.repeat(1,len(M1.all_volumes))
 
 gids_p_d=M1.mb.tag_get_data(M1.ID_reordenado_tag,volumes_d,flat=True)
 gids_p_n=M1.mb.tag_get_data(M1.ID_reordenado_tag,volumes_n,flat=True)
@@ -2767,14 +2778,16 @@ SOL_ADM_1=linalg.spsolve(OR_ADM*T*OP_ADM,OR_ADM*b)    #-OR_ADM*T*corr_adm1_sd   
 
 SOL_ADM_fina_1=OP_ADM*SOL_ADM_1#-corr_adm1_sd.transpose()[0]
 
-if first:
-    print("resolvendo TPFA")
-    t0=time.time()
-    SOL_TPFA=linalg.spsolve(T,b)
-    print("resolveu TPFA: ",time.time()-t0+t_assembly,t_assembly)
-    np.save('SOL_TPFA.npy', SOL_TPFA)
-else:
-    SOL_TPFA = np.load('SOL_TPFA.npy')
+# if first:
+#     print("resolvendo TPFA")
+#     t0=time.time()
+#     SOL_TPFA=linalg.spsolve(T,b)
+#     print("resolveu TPFA: ",time.time()-t0+t_assembly,t_assembly)
+#     np.save('SOL_TPFA.npy', SOL_TPFA)
+# else:
+#     SOL_TPFA = np.load('SOL_TPFA.npy')
+
+SOL_TPFA = np.load('SOL_TPFA.npy')
 
 
 erro=np.zeros(len(SOL_TPFA))
@@ -2978,3 +2991,27 @@ if first:
 # plt.plot(ex,l2i,'r')
 # plt.savefig("erro_20000_cond.png")
 # plt.savefig("Norma_l2_20000_cond.png")
+
+# percent_nos_ativos = 0
+# normaL2_max = 0
+# normaLinf_max = 0
+#
+# vols_adm = len(np.unique(M1.mb.tag_get_data(L2_ID_tag, M1.all_volumes, flat=True)))
+# nvols_total = len(M1.all_volumes)
+# percent_nos_ativos = 100*(vols_adm/nvols_total)
+#
+# # import pdb; pdb.set_trace()
+# erro2 = erro_ABS
+# normaL2_max = np.linalg.norm(erro2)/np.linalg.norm(SOL_TPFA)
+# normaLinf_max = np.array(erro_ABS/SOL_TPFA).max()
+#
+# # saida = np.array([np.array(['Percentual_nos_ativos', 'norma_L2_max', 'norma_L_inf_max'])])
+# saida = np.array([])
+# saida = np.append(saida,np.array([percent_nos_ativos, normaL2_max, normaLinf_max]))
+#
+# np.savetxt('saida.csv', saida, delimiter=',')
+#
+# M1.mb.write_file(ext_h5m_out)
+# M1.mb.write_file(ext_vtk_out, [av])
+# np.save('faces_adjs_by_dual', faces_adjs_by_dual)
+# np.save('intern_adjs_by_dual', intern_adjs_by_dual)

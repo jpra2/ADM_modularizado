@@ -8,6 +8,8 @@
 *.prof
 *.cprof
 *.lprof
+*.txt
+*.csv
 *monotone_methods.py
 
 
