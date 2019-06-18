@@ -37,7 +37,6 @@ def remover():
 remover()
 
 ks = np.array([0.5, 1.0, 1.5, 2.0, 2.5, 3.0])
-
 np.save('ks', ks)
 np.save('loop', np.array([0]))
 np.save('len_ks', np.array([len(ks)]))
@@ -54,6 +53,5 @@ with open('saida.csv', 'w') as f:
 
 for i in range(len(ks)):
     time.sleep(3)
-    import pdb; pdb.set_trace()
     # from ADM_02_backup_seg import *
     from ADM_02_seg import *

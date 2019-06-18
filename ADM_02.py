@@ -10,7 +10,8 @@ import cython
 from scipy.sparse import csc_matrix, csr_matrix, lil_matrix, vstack, hstack, linalg, identity, find
 from ADM_02 import *
 
-__all__ = []
+__all__ = ['M1', 'bvn', 'bvd', 'nx', 'ny', 'nz', 'lx', 'ly', 'lz', 'x1', 'y1', 'z1', 'input_file',
+           'l1', 'l2']
 
 class MeshManager:
     def __init__(self,mesh_file, dim=3):
@@ -138,7 +139,7 @@ class MeshManager:
                   0, k01, 0,
                   0, 0, k01]
 
-        k02 = 0.002
+        k02 = 0.0001
         perm02 = [k02, 0, 0,
                   0, k02, 0,
                   0, 0, k02]
@@ -417,34 +418,34 @@ def get_box(conjunto, all_centroids, limites, return_inds):
 
 #--------------Início dos parâmetros de entrada-------------------
 # M1= MeshManager('27x27x27.msh')          # Objeto que armazenará as informações da malha
-# input_file = '30x30x45'
+input_file = '45x45x45'
 ext_msh_in = input_file + '.msh'
 ext_h5m_out = input_file + '_malha_adm.h5m'
 ext_vtk_out = input_file + 'saida.vtk'
 
 # M1 esta sendo importado de ADM_02
-# M1= MeshManager(ext_msh_in)          # Objeto que armazenará as informações da malha
+M1= MeshManager(ext_msh_in)          # Objeto que armazenará as informações da malha
 all_volumes=M1.all_volumes
 
 # Ci = n: Ci -> Razão de engrossamento ni nível i (em relação ao nível i-1),
 # n -> número de blocos em cada uma das 3 direções (mesmo número em todas)
 
-# M1.all_centroids=np.array([M1.mtu.get_average_position([v]) for v in all_volumes])
+M1.all_centroids=np.array([M1.mtu.get_average_position([v]) for v in all_volumes])
 all_centroids = M1.all_centroids
 cent_tag = M1.mb.tag_get_handle('CENT', 3, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
 M1.mb.tag_set_data(cent_tag, M1.all_volumes, all_centroids)
 
-# nx=30
-# ny=30
-# nz=45
-#
-# lx=20
-# ly=10
-# lz=2
-#
-# x1=nx*lx
-# y1=ny*ly
-# z1=nz*lz
+nx=45
+ny=45
+nz=45
+
+lx=20
+ly=10
+lz=2
+
+x1=nx*lx
+y1=ny*ly
+z1=nz*lz
 # Distância, em relação ao poço, até onde se usa malha fina
 r0 = 4
 # Distância, em relação ao poço, até onde se usa malha intermediária
@@ -453,8 +454,8 @@ r1 = 1
 bvd = np.array([np.array([x1-lx, 0.0, 0.0]), np.array([x1, y1, lz])])
 bvn = np.array([np.array([0.0, 0.0, z1-lz]), np.array([lx, y1, z1])])
 '''
-# bvd = np.array([np.array([0.0, 0.0, 0.0]), np.array([lx, ly, z1])])
-# bvn = np.array([np.array([x1-lx, y1-ly, 0.0]), np.array([x1, y1, z1])])
+bvd = np.array([np.array([0.0, 0.0, 0.0]), np.array([lx, ly, z1])])
+bvn = np.array([np.array([x1-lx, y1-ly, 0.0]), np.array([x1, y1, z1])])
 #bvd = np.array([np.array([0.0, 0.0, y2]), np.array([y0, y0, y0])])
 #bvn = np.array([np.array([0.0, 0.0, 0.0]), np.array([y0, y0, y1])])
 
@@ -484,8 +485,8 @@ Cent_wels = all_centroids[inds_pocos]
 
 # Ci = n: Ci -> Razão de engrossamento ni nível i (em relação ao nível i-1),
 # n -> número de blocos em cada uma das 3 direções (mesmo número em todas)
-# l1=[3*lx,3*ly,3*lz]
-# l2=[9*lx,9*ly,9*lz]
+l1=[3*lx,3*ly,3*lz]
+l2=[9*lx,9*ly,9*lz]
 # Posição aproximada de cada completação
 
 
@@ -2791,17 +2792,17 @@ for i in range(len(SOL_TPFA)):
 erroADM1=np.zeros(len(SOL_TPFA))
 for i in range(len(SOL_TPFA)): erroADM1[i]=100*abs((SOL_TPFA[i]-SOL_ADM_fina_1[i])/SOL_TPFA[i])
 
-# ERRO_tag=M1.mb.tag_get_handle("erro", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
-# ERROadm1_tag=M1.mb.tag_get_handle("erroADM1", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
-# Sol_TPFA_tag=M1.mb.tag_get_handle("Pressão TPFA", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
-# Sol_ADM_tag=M1.mb.tag_get_handle("Pressão ADM", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+ERRO_tag=M1.mb.tag_get_handle("erro", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+ERROadm1_tag=M1.mb.tag_get_handle("erroADM1", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+Sol_TPFA_tag=M1.mb.tag_get_handle("Pressão TPFA", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+Sol_ADM_tag=M1.mb.tag_get_handle("Pressão ADM", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
 
-ERRO_tag=M1.mb.tag_get_handle("erro")
-ERROadm1_tag=M1.mb.tag_get_handle("erroADM1")
-Sol_TPFA_tag=M1.mb.tag_get_handle("Pressão TPFA")
-Sol_ADM_tag=M1.mb.tag_get_handle("Pressão ADM")
+# ERRO_tag=M1.mb.tag_get_handle("erro")
+# ERROadm1_tag=M1.mb.tag_get_handle("erroADM1")
+# Sol_TPFA_tag=M1.mb.tag_get_handle("Pressão TPFA")
+# Sol_ADM_tag=M1.mb.tag_get_handle("Pressão ADM")
 
-perm_xx_tag=M1.mb.tag_get_handle("Perm_xx")
+perm_xx_tag=M1.mb.tag_get_handle("Perm_xx", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
 GIDs=M1.mb.tag_get_data(M1.ID_reordenado_tag,M1.all_volumes,flat=True)
 perms_xx=M1.mb.tag_get_data(M1.perm_tag,M1.all_volumes)[:,0]
 cont=0
@@ -2944,17 +2945,6 @@ for i in range(int(max_iter/500)):
 x1=(x1.toarray()).transpose()[0]
 if first:
     np.save('SOL_ADM_fina.npy', x1)
-
-finos_0_meshset = M1.mb.create_meshset()
-finos_0 = M1.mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([L3_ID_tag]), np.array([1]))
-M1.mb.add_entities(finos_0_meshset, finos_0)
-finos_0_tag = M1.mb.tag_get_handle('finos0', 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
-M1.mb.tag_set_data(finos_0_tag, 0, finos_0_meshset)
-intermediarios_meshset = M1.mb.create_meshset()
-intermediarios = M1.mb.get_entities_by_type_and_tag(0, types.MBHEX, np.array([L3_ID_tag]), np.array([2]))
-M1.mb.add_entities(intermediarios_meshset, intermediarios)
-intermediarios_tag = M1.mb.tag_get_handle('intermediarios', 1, types.MB_TYPE_HANDLE, types.MB_TAG_MESH, True)
-M1.mb.tag_set_data(intermediarios_tag, 0, intermediarios_meshset)
 
 percent_nos_ativos = 0
 normaL2_max = 0
