@@ -420,7 +420,7 @@ def get_box(conjunto, all_centroids, limites, return_inds):
 # input_file = '30x30x45'
 ext_msh_in = input_file + '.msh'
 ext_h5m_out = input_file + '_malha_adm.h5m'
-ext_vtk_out = input_file + 'saida.vtk'
+ext_vtk_out = input_file + 'saida_'
 
 # M1 esta sendo importado de ADM_02
 # M1= MeshManager(ext_msh_in)          # Objeto que armazenará as informações da malha
@@ -3001,9 +3001,9 @@ saida = np.append(saida,np.array([percent_nos_ativos, normaL2_max, normaLinf_max
 
 name_saida = 'saida.csv'
 with open(name_saida, 'a+') as file:
-    file.write(str(percent_nos_ativos)+','+str(normaL2_max)+','+str(normaLinf_max)+','+str(loop)+'\n')
+    file.write(str(percent_nos_ativos)+','+str(normaL2_max)+','+str(normaLinf_max)+','+str(loop)+','+str(kkk)+'\n')
 
-M1.mb.write_file(ext_vtk_out+str(loop), [av])
+M1.mb.write_file(ext_vtk_out+str(loop)+'.vtk', [av])
 loop += 1
 np.save('loop', np.array([loop]))
 
@@ -3053,4 +3053,3 @@ np.save('loop', np.array([loop]))
 # plt.plot(ex,l2i,'r')
 # plt.savefig("erro_20000_cond.png")
 # plt.savefig("Norma_l2_20000_cond.png")
-import pdb; pdb.set_trace()

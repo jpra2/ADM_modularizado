@@ -498,8 +498,8 @@ Cent_wels = all_centroids[inds_pocos]
 
 # Ci = n: Ci -> Razão de engrossamento ni nível i (em relação ao nível i-1),
 # n -> número de blocos em cada uma das 3 direções (mesmo número em todas)
-l1=[3*lx,3*ly,3*lz]
-l2=[9*lx,9*ly,9*lz]
+l1=[5*lx,5*ly,5*lz]
+l2=[15*lx,15*ly,15*lz]
 # Posição aproximada de cada completação
 
 

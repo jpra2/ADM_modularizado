@@ -10,7 +10,7 @@ import cython
 from scipy.sparse import csc_matrix, csr_matrix, lil_matrix, vstack, hstack, linalg, identity, find
 
 __all__ = ['M1', 'bvn', 'bvd', 'nx', 'ny', 'nz', 'lx', 'ly', 'lz', 'x1', 'y1', 'z1', 'input_file',
-           'l1', 'l2']
+           'l1', 'l2', 'nc1', 'nc2']
 
 class MeshManager:
     def __init__(self,mesh_file, dim=3):
@@ -425,7 +425,7 @@ def get_box(conjunto, all_centroids, limites, return_inds):
 
 #--------------Início dos parâmetros de entrada-------------------
 # M1= MeshManager('27x27x27.msh')          # Objeto que armazenará as informações da malha
-input_file = '45x45x45'
+input_file = '30x30x45'
 ext_msh_in = input_file + '.msh'
 ext_h5m_out = input_file + '_malha_adm.h5m'
 ext_vtk_out = input_file + 'saida.vtk'
@@ -439,8 +439,8 @@ all_volumes=M1.all_volumes
 M1.all_centroids=np.array([M1.mtu.get_average_position([v]) for v in all_volumes])
 all_centroids = M1.all_centroids
 
-nx=45
-ny=45
+nx=30
+ny=30
 nz=45
 
 lx=20
@@ -451,7 +451,7 @@ x1=nx*lx
 y1=ny*ly
 z1=nz*lz
 # Distância, em relação ao poço, até onde se usa malha fina
-r0 = 4
+r0 = 1
 # Distância, em relação ao poço, até onde se usa malha intermediária
 r1 = 1
 '''
@@ -595,7 +595,7 @@ def lu_inv2(M):
 def lu_inv3(M,lines):
     lines=np.array(lines)
     L=len(lines)
-    s=1000
+    s=100
     n=int(L/s)
     r=int(L-int(L/s)*s)
     tinv=time.time()
@@ -640,7 +640,7 @@ def lu_inv4(M,lines):
     lines=np.array(lines)
     cols=lines
     L=len(lines)
-    s=500
+    s=100
     n=int(L/s)
     r=int(L-int(L/s)*s)
     tinv=time.time()
@@ -1207,71 +1207,91 @@ li=[]
 ci=[]
 di=[]
 cont=0
-intern_adjs_by_dual=[]
-faces_adjs_by_dual=[]
+verif_topology = False
+try:
+    intern_adjs_by_dual = np.load('intern_adjs_by_dual.npy')
+except:
+    intern_adjs_by_dual = []
+    verif_topology = True
+
+try:
+    faces_adjs_by_dual = np.load('faces_adjs_by_dual.npy')
+except:
+    faces_adjs_by_dual = []
+    verif_topology = True
+
+
+# intern_adjs_by_dual=[]
+# faces_adjs_by_dual=[]
 dual_1_meshset=M1.mb.create_meshset()
 
 D_x=max(Lx-int(Lx/l1[0])*l1[0],Lx-int(Lx/l2[0])*l2[0])
 D_y=max(Ly-int(Ly/l1[1])*l1[1],Ly-int(Ly/l2[1])*l2[1])
 D_z=max(Lz-int(Lz/l1[2])*l1[2],Lz-int(Lz/l2[2])*l2[2])
-for i in range(len(lxd1)-1):
-    x0=lxd1[i]
-    x1=lxd1[i+1]
-    box_x=np.array([[x0-0.01,ymin,zmin],[x1+0.01,ymax,zmax]])
-    vols_x=get_box(M1.all_volumes, all_centroids, box_x, False)
-    x_centroids=np.array([M1.mtu.get_average_position([v]) for v in vols_x])
-    for j in range(len(lyd1)-1):
-        y0=lyd1[j]
-        y1=lyd1[j+1]
-        box_y=np.array([[x0-0.01,y0-0.01,zmin],[x1+0.01,y1+0.01,zmax]])
-        vols_y=get_box(vols_x, x_centroids, box_y, False)
-        y_centroids=np.array([M1.mtu.get_average_position([v]) for v in vols_y])
-        for k in range(len(lzd1)-1):
-            z0=lzd1[k]
-            z1=lzd1[k+1]
-            tb=time.time()
-            box_dual_1=np.array([[x0-0.01,y0-0.01,z0-0.01],[x1+0.01,y1+0.01,z1+0.01]])
-            vols=get_box(vols_y, y_centroids, box_dual_1, False)
-            tipo=M1.mb.tag_get_data(D1_tag,vols,flat=True)
-            inter=rng.Range(np.array(vols)[np.where(tipo==0)[0]])
 
-            M1.mb.tag_set_data(local_id_int_tag,inter,range(len(inter)))
-            add_topology(inter,local_id_int_tag,intern_adjs_by_dual)
+if verif_topology:
+
+    for i in range(len(lxd1)-1):
+        x0=lxd1[i]
+        x1=lxd1[i+1]
+        box_x=np.array([[x0-0.01,ymin,zmin],[x1+0.01,ymax,zmax]])
+        vols_x=get_box(M1.all_volumes, all_centroids, box_x, False)
+        x_centroids=np.array([M1.mtu.get_average_position([v]) for v in vols_x])
+        for j in range(len(lyd1)-1):
+            y0=lyd1[j]
+            y1=lyd1[j+1]
+            box_y=np.array([[x0-0.01,y0-0.01,zmin],[x1+0.01,y1+0.01,zmax]])
+            vols_y=get_box(vols_x, x_centroids, box_y, False)
+            y_centroids=np.array([M1.mtu.get_average_position([v]) for v in vols_y])
+            for k in range(len(lzd1)-1):
+                z0=lzd1[k]
+                z1=lzd1[k+1]
+                tb=time.time()
+                box_dual_1=np.array([[x0-0.01,y0-0.01,z0-0.01],[x1+0.01,y1+0.01,z1+0.01]])
+                vols=get_box(vols_y, y_centroids, box_dual_1, False)
+                tipo=M1.mb.tag_get_data(D1_tag,vols,flat=True)
+                inter=rng.Range(np.array(vols)[np.where(tipo==0)[0]])
+
+                M1.mb.tag_set_data(local_id_int_tag,inter,range(len(inter)))
+                add_topology(inter,local_id_int_tag,intern_adjs_by_dual)
 
 
-            fac=rng.Range(np.array(vols)[np.where(tipo==1)[0]])
-            fac_centroids=np.array([M1.mtu.get_average_position([f]) for f in fac])
+                fac=rng.Range(np.array(vols)[np.where(tipo==1)[0]])
+                fac_centroids=np.array([M1.mtu.get_average_position([f]) for f in fac])
 
-            box_faces_x=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x0+lx/2,y1+ly/2,z1+lz/2]])
-            box_faces_y=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y0+ly/2,z1+lz/2]])
-            box_faces_z=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z0+lz/2]])
+                box_faces_x=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x0+lx/2,y1+ly/2,z1+lz/2]])
+                box_faces_y=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y0+ly/2,z1+lz/2]])
+                box_faces_z=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z0+lz/2]])
 
-            faces_x=get_box(fac, fac_centroids, box_faces_x, False)
+                faces_x=get_box(fac, fac_centroids, box_faces_x, False)
 
-            faces_y=get_box(fac, fac_centroids, box_faces_y, False)
-            f1=rng.unite(faces_x,faces_y)
+                faces_y=get_box(fac, fac_centroids, box_faces_y, False)
+                f1=rng.unite(faces_x,faces_y)
 
-            faces_z=get_box(fac, fac_centroids, box_faces_z, False)
-            f1=rng.unite(f1,faces_z)
+                faces_z=get_box(fac, fac_centroids, box_faces_z, False)
+                f1=rng.unite(f1,faces_z)
 
-            if i==len(lxd1)-2:
-                box_faces_x2=np.array([[x1-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
-                faces_x2=get_box(fac, fac_centroids, box_faces_x2, False)
-                f1=rng.unite(f1,faces_x2)
+                if i==len(lxd1)-2:
+                    box_faces_x2=np.array([[x1-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
+                    faces_x2=get_box(fac, fac_centroids, box_faces_x2, False)
+                    f1=rng.unite(f1,faces_x2)
 
-            if j==len(lyd1)-2:
-                box_faces_y2=np.array([[x0-lx/2,y1-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
-                faces_y2=get_box(fac, fac_centroids, box_faces_y2, False)
-                f1=rng.unite(f1,faces_y2)
+                if j==len(lyd1)-2:
+                    box_faces_y2=np.array([[x0-lx/2,y1-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
+                    faces_y2=get_box(fac, fac_centroids, box_faces_y2, False)
+                    f1=rng.unite(f1,faces_y2)
 
-            if k==len(lzd1)-2:
-                box_faces_z2=np.array([[x0-lx/2,y0-ly/2,z1-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
-                faces_z2=get_box(fac, fac_centroids, box_faces_z2, False)
-                f1=rng.unite(f1,faces_z2)
+                if k==len(lzd1)-2:
+                    box_faces_z2=np.array([[x0-lx/2,y0-ly/2,z1-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
+                    faces_z2=get_box(fac, fac_centroids, box_faces_z2, False)
+                    f1=rng.unite(f1,faces_z2)
 
-            sgids+=len(f1)
-            M1.mb.tag_set_data(local_id_fac_tag,f1,range(len(f1)))
-            add_topology(f1,local_id_fac_tag,faces_adjs_by_dual)
+                sgids+=len(f1)
+                M1.mb.tag_set_data(local_id_fac_tag,f1,range(len(f1)))
+                add_topology(f1,local_id_fac_tag,faces_adjs_by_dual)
+
+    np.save('faces_adjs_by_dual', faces_adjs_by_dual)
+    np.save('intern_adjs_by_dual', intern_adjs_by_dual)
 
 print(time.time()-t1,"criou meshset")
 
@@ -2778,16 +2798,18 @@ SOL_ADM_1=linalg.spsolve(OR_ADM*T*OP_ADM,OR_ADM*b)    #-OR_ADM*T*corr_adm1_sd   
 
 SOL_ADM_fina_1=OP_ADM*SOL_ADM_1#-corr_adm1_sd.transpose()[0]
 
-# if first:
-#     print("resolvendo TPFA")
-#     t0=time.time()
-#     SOL_TPFA=linalg.spsolve(T,b)
-#     print("resolveu TPFA: ",time.time()-t0+t_assembly,t_assembly)
-#     np.save('SOL_TPFA.npy', SOL_TPFA)
-# else:
-#     SOL_TPFA = np.load('SOL_TPFA.npy')
 
-SOL_TPFA = np.load('SOL_TPFA.npy')
+if first:
+    try:
+        SOL_TPFA = np.load('SOL_TPFA.npy')
+    except:
+        print("resolvendo TPFA")
+        t0=time.time()
+        SOL_TPFA=linalg.spsolve(T,b)
+        print("resolveu TPFA: ",time.time()-t0+t_assembly,t_assembly)
+        np.save('SOL_TPFA.npy', SOL_TPFA)
+else:
+    SOL_TPFA = np.load('SOL_TPFA.npy')
 
 
 erro=np.zeros(len(SOL_TPFA))

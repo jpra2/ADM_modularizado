@@ -454,7 +454,7 @@ all_centroids = M1.all_centroids
 # y1=ny*ly
 # z1=nz*lz
 # Distância, em relação ao poço, até onde se usa malha fina
-r0 = 4
+r0 = 1
 # Distância, em relação ao poço, até onde se usa malha intermediária
 r1 = 1
 '''
@@ -598,7 +598,7 @@ def lu_inv2(M):
 def lu_inv3(M,lines):
     lines=np.array(lines)
     L=len(lines)
-    s=1000
+    s=100
     n=int(L/s)
     r=int(L-int(L/s)*s)
     tinv=time.time()
@@ -886,18 +886,18 @@ L2_meshset=M1.mb.create_meshset()       # root Meshset
 
 ###########################################################################################
 #jp:modifiquei as tags abaixo para sparse
-D1_tag=M1.mb.tag_get_handle("d1", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
-D2_tag=M1.mb.tag_get_handle("d2", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
+D1_tag=M1.mb.tag_get_handle("d1")
+D2_tag=M1.mb.tag_get_handle("d2")
 ##########################################################################################
 
-fine_to_primal1_classic_tag = M1.mb.tag_get_handle("FINE_TO_PRIMAL1_CLASSIC", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
-fine_to_primal2_classic_tag = M1.mb.tag_get_handle("FINE_TO_PRIMAL2_CLASSIC", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
+fine_to_primal1_classic_tag = M1.mb.tag_get_handle("FINE_TO_PRIMAL1_CLASSIC")
+fine_to_primal2_classic_tag = M1.mb.tag_get_handle("FINE_TO_PRIMAL2_CLASSIC")
 AV_meshset=M1.mb.create_meshset()
 
-primal_id_tag1 = M1.mb.tag_get_handle("PRIMAL_ID_1", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
-primal_id_tag2 = M1.mb.tag_get_handle("PRIMAL_ID_2", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
-nc1=0
-nc2=0
+primal_id_tag1 = M1.mb.tag_get_handle("PRIMAL_ID_1")
+primal_id_tag2 = M1.mb.tag_get_handle("PRIMAL_ID_2")
+# nc1=0
+# nc2=0
 
 D_x=max(Lx-int(Lx/l1[0])*l1[0],Lx-int(Lx/l2[0])*l2[0])
 D_y=max(Ly-int(Ly/l1[1])*l1[1],Ly-int(Ly/l2[1])*l2[1])
@@ -907,135 +907,135 @@ centroids=np.array([M1.mtu.get_average_position([np.uint64(v)]) for v in M1.all_
 sx=0
 ref_dual=False
 M1.mb.add_entities(AV_meshset,all_volumes)
-for i in range(len(lx2)-1):
-    t1=time.time()
-    if i==len(lx2)-2:
-        sx=D_x
-    sy=0
-    for j in range(len(ly2)-1):
-        if j==len(ly2)-2:
-            sy=D_y
-        sz=0
-        for k in range(len(lz2)-1):
-            if k==len(lz2)-2:
-                sz=D_z
-            l2_meshset=M1.mb.create_meshset()
-            cont=0
-            box_primal2 = np.array([np.array([lx2[i], ly2[j], lz2[k]]), np.array([lx2[i]+l2[0]+sx, ly2[j]+l2[1]+sy, lz2[k]+l2[2]+sz])])
-            elem_por_L2 = get_box(M1.all_volumes, centroids, box_primal2, False)
-            M1.mb.add_entities(l2_meshset,elem_por_L2)
-            centroid_p2=np.array([M1.mtu.get_average_position([np.uint64(v)]) for v in elem_por_L2])
-            for elem in elem_por_L2:
-                centroid=centroid_p2[cont]
-                cont+=1
-                f1a2v3=0
-                if (centroid[0]-lxd2[i])**2<=l1[0]**2/4:
-                    f1a2v3+=1
-                if (centroid[1]-lyd2[j])**2<=l1[1]**2/4:
-                    f1a2v3+=1
-                if (centroid[2]-lzd2[k])**2<=l1[2]**2/4:
-                    f1a2v3+=1
-                M1.mb.tag_set_data(D2_tag, elem, f1a2v3)
-                M1.mb.tag_set_data(fine_to_primal2_classic_tag, elem, nc2)
-
-            M1.mb.add_child_meshset(L2_meshset,l2_meshset)
-            sg=M1.mb.get_entities_by_handle(l2_meshset)
-            print(k, len(sg), time.time()-t1)
-            t1=time.time()
-            M1.mb.tag_set_data(primal_id_tag2, l2_meshset, nc2)
-
-            centroids_primal2=np.array([M1.mtu.get_average_position([np.uint64(v)]) for v in elem_por_L2])
-            nc2+=1
-            s1x=0
-            for m in range(len(lx1)):
-                a=int(l2[0]/l1[0])*i+m
-                if Lx-D_x==lx2[i]+lx1[m]+l1[0]:# and D_x==Lx-int(Lx/l1[0])*l1[0]:
-                    s1x=D_x
-                s1y=0
-                for n in range(len(ly1)):
-                    b=int(l2[1]/l1[1])*j+n
-                    if Ly-D_y==ly2[j]+ly1[n]+l1[1]:# and D_y==Ly-int(Ly/l1[1])*l1[1]:
-                        s1y=D_y
-                    s1z=0
-
-                    for o in range(len(lz1)):
-                        c=int(l2[2]/l1[2])*k+o
-                        if Lz-D_z==lz2[k]+lz1[o]+l1[2]:
-                            s1z=D_z
-                        l1_meshset=M1.mb.create_meshset()
-
-                        box_primal1 = np.array([np.array([lx2[i]+lx1[m], ly2[j]+ly1[n], lz2[k]+lz1[o]]), np.array([lx2[i]+lx1[m]+l1[0]+s1x, ly2[j]+ly1[n]+l1[1]+s1y, lz2[k]+lz1[o]+l1[2]+s1z])])
-                        elem_por_L1 = get_box(elem_por_L2, centroids_primal2, box_primal1, False)
-                        M1.mb.add_entities(l1_meshset,elem_por_L1)
-                        #centroid_p1=np.array([M1.mtu.get_average_position([np.uint64(v)]) for v in elem_por_L1])
-                        cont1=0
-                        values_1=[]
-                        faces1=[]
-                        internos1=[]
-                        for e in elem_por_L1:
-                            #centroid=centroid_p1[cont1]
-                            cont1+=1
-                            f1a2v3=0
-                            M_M=Min_Max(e)
-                            if (M_M[0]<lxd1[a] and M_M[1]>=lxd1[a]):
-                                f1a2v3+=1
-                            if (M_M[2]<lyd1[b] and M_M[3]>=lyd1[b]):
-                                f1a2v3+=1
-                            if (M_M[4]<lzd1[c] and M_M[5]>=lzd1[c]):
-                                f1a2v3+=1
-                            values_1.append(f1a2v3)
-
-                            if ref_dual:
-                                if f1a2v3==0:
-                                    internos1.append(e)
-                                if f1a2v3==1:
-                                    faces1.append(e)
-                                elif f1a2v3==3:
-                                    vertice=e
-                        M1.mb.tag_set_data(D1_tag, elem_por_L1,values_1)
-
-                        M1.mb.tag_set_data(fine_to_primal1_classic_tag, elem_por_L1, np.repeat(nc1,len(elem_por_L1)))
-
-                        # Enriquece a malha dual
-                        if ref_dual:
-                            #viz_vert=rng.unite(rng.Range(vertice),M1.mtu.get_bridge_adjacencies(vertice, 1, 3))
-                            viz_vert=M1.mtu.get_bridge_adjacencies(vertice, 1, 3)
-                            cent_v=cent=M1.mtu.get_average_position([np.uint64(vertice)])
-                            new_vertices=[]
-                            perm1=M1.mb.tag_get_data(M1.perm_tag,viz_vert)
-                            perm1_x=perm1[:,0]
-                            perm1_y=perm1[:,4]
-                            perm1_z=perm1[:,8]
-                            r=False
-                            r_p=0
-                            #print(max(perm1_x)/min(perm1_x),max(perm1_y)/min(perm1_y),max(perm1_z)/min(perm1_z))
-                            if max(perm1_x)>r_p*min(perm1_x) or max(perm1_y)>r_p*min(perm1_y) or max(perm1_z)>r_p*min(perm1_z):
-                                r=True
-                            #print(max(perm1_x)/min(perm1_x))
-                            #rng.subtract(rng.Range(vertice),viz_vert)
-                            for v in viz_vert:
-                                cent=M1.mtu.get_average_position([np.uint64(v)])
-                                if (cent[2]-cent_v[2])<0.01 and r:# and v in faces1:
-                                    new_vertices.append(v)
-
-                            adjs_new_vertices=[M1.mtu.get_bridge_adjacencies(v,2,3) for v in new_vertices]
-
-                            new_faces=[]
-                            for conj in adjs_new_vertices:
-                                v=rng.intersect(rng.Range(internos1),conj)
-                                if len(v)>0:
-                                    new_faces.append(np.uint64(v))
-                            for f in new_faces:
-                                try:
-                                    vfd=0
-                                    #M1.mb.tag_set_data(D1_tag, f,np.repeat(1,len(f)))
-                                except:
-                                    import pdb; pdb.set_trace()
-
-                        #M1.mb.tag_set_data(D1_tag, new_vertices,np.repeat(2,len(new_vertices)))
-                        M1.mb.tag_set_data(primal_id_tag1, l1_meshset, nc1)
-                        nc1+=1
-                        M1.mb.add_child_meshset(l2_meshset,l1_meshset)
+# for i in range(len(lx2)-1):
+#     t1=time.time()
+#     if i==len(lx2)-2:
+#         sx=D_x
+#     sy=0
+#     for j in range(len(ly2)-1):
+#         if j==len(ly2)-2:
+#             sy=D_y
+#         sz=0
+#         for k in range(len(lz2)-1):
+#             if k==len(lz2)-2:
+#                 sz=D_z
+#             l2_meshset=M1.mb.create_meshset()
+#             cont=0
+#             box_primal2 = np.array([np.array([lx2[i], ly2[j], lz2[k]]), np.array([lx2[i]+l2[0]+sx, ly2[j]+l2[1]+sy, lz2[k]+l2[2]+sz])])
+#             elem_por_L2 = get_box(M1.all_volumes, centroids, box_primal2, False)
+#             M1.mb.add_entities(l2_meshset,elem_por_L2)
+#             centroid_p2=np.array([M1.mtu.get_average_position([np.uint64(v)]) for v in elem_por_L2])
+#             for elem in elem_por_L2:
+#                 centroid=centroid_p2[cont]
+#                 cont+=1
+#                 f1a2v3=0
+#                 if (centroid[0]-lxd2[i])**2<=l1[0]**2/4:
+#                     f1a2v3+=1
+#                 if (centroid[1]-lyd2[j])**2<=l1[1]**2/4:
+#                     f1a2v3+=1
+#                 if (centroid[2]-lzd2[k])**2<=l1[2]**2/4:
+#                     f1a2v3+=1
+#                 M1.mb.tag_set_data(D2_tag, elem, f1a2v3)
+#                 M1.mb.tag_set_data(fine_to_primal2_classic_tag, elem, nc2)
+#
+#             M1.mb.add_child_meshset(L2_meshset,l2_meshset)
+#             sg=M1.mb.get_entities_by_handle(l2_meshset)
+#             print(k, len(sg), time.time()-t1)
+#             t1=time.time()
+#             M1.mb.tag_set_data(primal_id_tag2, l2_meshset, nc2)
+#
+#             centroids_primal2=np.array([M1.mtu.get_average_position([np.uint64(v)]) for v in elem_por_L2])
+#             nc2+=1
+#             s1x=0
+#             for m in range(len(lx1)):
+#                 a=int(l2[0]/l1[0])*i+m
+#                 if Lx-D_x==lx2[i]+lx1[m]+l1[0]:# and D_x==Lx-int(Lx/l1[0])*l1[0]:
+#                     s1x=D_x
+#                 s1y=0
+#                 for n in range(len(ly1)):
+#                     b=int(l2[1]/l1[1])*j+n
+#                     if Ly-D_y==ly2[j]+ly1[n]+l1[1]:# and D_y==Ly-int(Ly/l1[1])*l1[1]:
+#                         s1y=D_y
+#                     s1z=0
+#
+#                     for o in range(len(lz1)):
+#                         c=int(l2[2]/l1[2])*k+o
+#                         if Lz-D_z==lz2[k]+lz1[o]+l1[2]:
+#                             s1z=D_z
+#                         l1_meshset=M1.mb.create_meshset()
+#
+#                         box_primal1 = np.array([np.array([lx2[i]+lx1[m], ly2[j]+ly1[n], lz2[k]+lz1[o]]), np.array([lx2[i]+lx1[m]+l1[0]+s1x, ly2[j]+ly1[n]+l1[1]+s1y, lz2[k]+lz1[o]+l1[2]+s1z])])
+#                         elem_por_L1 = get_box(elem_por_L2, centroids_primal2, box_primal1, False)
+#                         M1.mb.add_entities(l1_meshset,elem_por_L1)
+#                         #centroid_p1=np.array([M1.mtu.get_average_position([np.uint64(v)]) for v in elem_por_L1])
+#                         cont1=0
+#                         values_1=[]
+#                         faces1=[]
+#                         internos1=[]
+#                         for e in elem_por_L1:
+#                             #centroid=centroid_p1[cont1]
+#                             cont1+=1
+#                             f1a2v3=0
+#                             M_M=Min_Max(e)
+#                             if (M_M[0]<lxd1[a] and M_M[1]>=lxd1[a]):
+#                                 f1a2v3+=1
+#                             if (M_M[2]<lyd1[b] and M_M[3]>=lyd1[b]):
+#                                 f1a2v3+=1
+#                             if (M_M[4]<lzd1[c] and M_M[5]>=lzd1[c]):
+#                                 f1a2v3+=1
+#                             values_1.append(f1a2v3)
+#
+#                             if ref_dual:
+#                                 if f1a2v3==0:
+#                                     internos1.append(e)
+#                                 if f1a2v3==1:
+#                                     faces1.append(e)
+#                                 elif f1a2v3==3:
+#                                     vertice=e
+#                         M1.mb.tag_set_data(D1_tag, elem_por_L1,values_1)
+#
+#                         M1.mb.tag_set_data(fine_to_primal1_classic_tag, elem_por_L1, np.repeat(nc1,len(elem_por_L1)))
+#
+#                         # Enriquece a malha dual
+#                         if ref_dual:
+#                             #viz_vert=rng.unite(rng.Range(vertice),M1.mtu.get_bridge_adjacencies(vertice, 1, 3))
+#                             viz_vert=M1.mtu.get_bridge_adjacencies(vertice, 1, 3)
+#                             cent_v=cent=M1.mtu.get_average_position([np.uint64(vertice)])
+#                             new_vertices=[]
+#                             perm1=M1.mb.tag_get_data(M1.perm_tag,viz_vert)
+#                             perm1_x=perm1[:,0]
+#                             perm1_y=perm1[:,4]
+#                             perm1_z=perm1[:,8]
+#                             r=False
+#                             r_p=0
+#                             #print(max(perm1_x)/min(perm1_x),max(perm1_y)/min(perm1_y),max(perm1_z)/min(perm1_z))
+#                             if max(perm1_x)>r_p*min(perm1_x) or max(perm1_y)>r_p*min(perm1_y) or max(perm1_z)>r_p*min(perm1_z):
+#                                 r=True
+#                             #print(max(perm1_x)/min(perm1_x))
+#                             #rng.subtract(rng.Range(vertice),viz_vert)
+#                             for v in viz_vert:
+#                                 cent=M1.mtu.get_average_position([np.uint64(v)])
+#                                 if (cent[2]-cent_v[2])<0.01 and r:# and v in faces1:
+#                                     new_vertices.append(v)
+#
+#                             adjs_new_vertices=[M1.mtu.get_bridge_adjacencies(v,2,3) for v in new_vertices]
+#
+#                             new_faces=[]
+#                             for conj in adjs_new_vertices:
+#                                 v=rng.intersect(rng.Range(internos1),conj)
+#                                 if len(v)>0:
+#                                     new_faces.append(np.uint64(v))
+#                             for f in new_faces:
+#                                 try:
+#                                     vfd=0
+#                                     #M1.mb.tag_set_data(D1_tag, f,np.repeat(1,len(f)))
+#                                 except:
+#                                     import pdb; pdb.set_trace()
+#
+#                         #M1.mb.tag_set_data(D1_tag, new_vertices,np.repeat(2,len(new_vertices)))
+#                         M1.mb.tag_set_data(primal_id_tag1, l1_meshset, nc1)
+#                         nc1+=1
+#                         M1.mb.add_child_meshset(l2_meshset,l1_meshset)
 #-------------------------------------------------------------------------------
 
 print('Criação da árvore de meshsets primais: ',time.time()-t0)
@@ -1135,13 +1135,13 @@ intermediarios=rng.unite(volumes_id,volumes_in)
 
 # Tag que armazena o ID do volume no nível 1
 # jp: modifiquei as tags abaixo para o tipo sparse
-L1_ID_tag=M1.mb.tag_get_handle("l1_ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
+L1_ID_tag=M1.mb.tag_get_handle("l1_ID")
 # L1ID_tag=M1.mb.tag_get_handle("l1ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
 # Tag que armazena o ID do volume no nível 2
-L2_ID_tag=M1.mb.tag_get_handle("l2_ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
+L2_ID_tag=M1.mb.tag_get_handle("l2_ID")
 # L2ID_tag=M1.mb.tag_get_handle("l2ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
 # ni = ID do elemento no nível i
-L3_ID_tag=M1.mb.tag_get_handle("l3_ID", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
+L3_ID_tag=M1.mb.tag_get_handle("l3_ID")
 ##########################################################################################
 # ni = ID do elemento no nível i
 
@@ -1201,8 +1201,8 @@ def add_topology(conj_vols,tag_local,lista):
     lista.append(adjsg2)
 
 
-local_id_int_tag = M1.mb.tag_get_handle("local_id_internos", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
-local_id_fac_tag = M1.mb.tag_get_handle("local_fac_internos", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
+local_id_int_tag = M1.mb.tag_get_handle("local_id_internos")
+local_id_fac_tag = M1.mb.tag_get_handle("local_fac_internos")
 M1.mb.tag_set_data(local_id_int_tag, M1.all_volumes,np.repeat(len(M1.all_volumes)+1,len(M1.all_volumes)))
 M1.mb.tag_set_data(local_id_fac_tag, M1.all_volumes,np.repeat(len(M1.all_volumes)+1,len(M1.all_volumes)))
 sgids=0
@@ -1210,71 +1210,74 @@ li=[]
 ci=[]
 di=[]
 cont=0
-intern_adjs_by_dual=[]
-faces_adjs_by_dual=[]
+# intern_adjs_by_dual=[]
+# faces_adjs_by_dual=[]
 dual_1_meshset=M1.mb.create_meshset()
 
 D_x=max(Lx-int(Lx/l1[0])*l1[0],Lx-int(Lx/l2[0])*l2[0])
 D_y=max(Ly-int(Ly/l1[1])*l1[1],Ly-int(Ly/l2[1])*l2[1])
 D_z=max(Lz-int(Lz/l1[2])*l1[2],Lz-int(Lz/l2[2])*l2[2])
-for i in range(len(lxd1)-1):
-    x0=lxd1[i]
-    x1=lxd1[i+1]
-    box_x=np.array([[x0-0.01,ymin,zmin],[x1+0.01,ymax,zmax]])
-    vols_x=get_box(M1.all_volumes, all_centroids, box_x, False)
-    x_centroids=np.array([M1.mtu.get_average_position([v]) for v in vols_x])
-    for j in range(len(lyd1)-1):
-        y0=lyd1[j]
-        y1=lyd1[j+1]
-        box_y=np.array([[x0-0.01,y0-0.01,zmin],[x1+0.01,y1+0.01,zmax]])
-        vols_y=get_box(vols_x, x_centroids, box_y, False)
-        y_centroids=np.array([M1.mtu.get_average_position([v]) for v in vols_y])
-        for k in range(len(lzd1)-1):
-            z0=lzd1[k]
-            z1=lzd1[k+1]
-            tb=time.time()
-            box_dual_1=np.array([[x0-0.01,y0-0.01,z0-0.01],[x1+0.01,y1+0.01,z1+0.01]])
-            vols=get_box(vols_y, y_centroids, box_dual_1, False)
-            tipo=M1.mb.tag_get_data(D1_tag,vols,flat=True)
-            inter=rng.Range(np.array(vols)[np.where(tipo==0)[0]])
+# for i in range(len(lxd1)-1):
+#     x0=lxd1[i]
+#     x1=lxd1[i+1]
+#     box_x=np.array([[x0-0.01,ymin,zmin],[x1+0.01,ymax,zmax]])
+#     vols_x=get_box(M1.all_volumes, all_centroids, box_x, False)
+#     x_centroids=np.array([M1.mtu.get_average_position([v]) for v in vols_x])
+#     for j in range(len(lyd1)-1):
+#         y0=lyd1[j]
+#         y1=lyd1[j+1]
+#         box_y=np.array([[x0-0.01,y0-0.01,zmin],[x1+0.01,y1+0.01,zmax]])
+#         vols_y=get_box(vols_x, x_centroids, box_y, False)
+#         y_centroids=np.array([M1.mtu.get_average_position([v]) for v in vols_y])
+#         for k in range(len(lzd1)-1):
+#             z0=lzd1[k]
+#             z1=lzd1[k+1]
+#             tb=time.time()
+#             box_dual_1=np.array([[x0-0.01,y0-0.01,z0-0.01],[x1+0.01,y1+0.01,z1+0.01]])
+#             vols=get_box(vols_y, y_centroids, box_dual_1, False)
+#             tipo=M1.mb.tag_get_data(D1_tag,vols,flat=True)
+#             inter=rng.Range(np.array(vols)[np.where(tipo==0)[0]])
+#
+#             M1.mb.tag_set_data(local_id_int_tag,inter,range(len(inter)))
+#             add_topology(inter,local_id_int_tag,intern_adjs_by_dual)
+#
+#
+#             fac=rng.Range(np.array(vols)[np.where(tipo==1)[0]])
+#             fac_centroids=np.array([M1.mtu.get_average_position([f]) for f in fac])
+#
+#             box_faces_x=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x0+lx/2,y1+ly/2,z1+lz/2]])
+#             box_faces_y=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y0+ly/2,z1+lz/2]])
+#             box_faces_z=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z0+lz/2]])
+#
+#             faces_x=get_box(fac, fac_centroids, box_faces_x, False)
+#
+#             faces_y=get_box(fac, fac_centroids, box_faces_y, False)
+#             f1=rng.unite(faces_x,faces_y)
+#
+#             faces_z=get_box(fac, fac_centroids, box_faces_z, False)
+#             f1=rng.unite(f1,faces_z)
+#
+#             if i==len(lxd1)-2:
+#                 box_faces_x2=np.array([[x1-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
+#                 faces_x2=get_box(fac, fac_centroids, box_faces_x2, False)
+#                 f1=rng.unite(f1,faces_x2)
+#
+#             if j==len(lyd1)-2:
+#                 box_faces_y2=np.array([[x0-lx/2,y1-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
+#                 faces_y2=get_box(fac, fac_centroids, box_faces_y2, False)
+#                 f1=rng.unite(f1,faces_y2)
+#
+#             if k==len(lzd1)-2:
+#                 box_faces_z2=np.array([[x0-lx/2,y0-ly/2,z1-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
+#                 faces_z2=get_box(fac, fac_centroids, box_faces_z2, False)
+#                 f1=rng.unite(f1,faces_z2)
+#
+#             sgids+=len(f1)
+#             M1.mb.tag_set_data(local_id_fac_tag,f1,range(len(f1)))
+#             add_topology(f1,local_id_fac_tag,faces_adjs_by_dual)
 
-            M1.mb.tag_set_data(local_id_int_tag,inter,range(len(inter)))
-            add_topology(inter,local_id_int_tag,intern_adjs_by_dual)
-
-
-            fac=rng.Range(np.array(vols)[np.where(tipo==1)[0]])
-            fac_centroids=np.array([M1.mtu.get_average_position([f]) for f in fac])
-
-            box_faces_x=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x0+lx/2,y1+ly/2,z1+lz/2]])
-            box_faces_y=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y0+ly/2,z1+lz/2]])
-            box_faces_z=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z0+lz/2]])
-
-            faces_x=get_box(fac, fac_centroids, box_faces_x, False)
-
-            faces_y=get_box(fac, fac_centroids, box_faces_y, False)
-            f1=rng.unite(faces_x,faces_y)
-
-            faces_z=get_box(fac, fac_centroids, box_faces_z, False)
-            f1=rng.unite(f1,faces_z)
-
-            if i==len(lxd1)-2:
-                box_faces_x2=np.array([[x1-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
-                faces_x2=get_box(fac, fac_centroids, box_faces_x2, False)
-                f1=rng.unite(f1,faces_x2)
-
-            if j==len(lyd1)-2:
-                box_faces_y2=np.array([[x0-lx/2,y1-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
-                faces_y2=get_box(fac, fac_centroids, box_faces_y2, False)
-                f1=rng.unite(f1,faces_y2)
-
-            if k==len(lzd1)-2:
-                box_faces_z2=np.array([[x0-lx/2,y0-ly/2,z1-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
-                faces_z2=get_box(fac, fac_centroids, box_faces_z2, False)
-                f1=rng.unite(f1,faces_z2)
-
-            sgids+=len(f1)
-            M1.mb.tag_set_data(local_id_fac_tag,f1,range(len(f1)))
-            add_topology(f1,local_id_fac_tag,faces_adjs_by_dual)
+intern_adjs_by_dual = np.load('intern_adjs_by_dual.npy')
+faces_adjs_by_dual = np.load('faces_adjs_by_dual.npy')
 
 print(time.time()-t1,"criou meshset")
 
@@ -1462,6 +1465,7 @@ s=1.0    #Parâmetro da secante
 lg=np.log(med_perm_by_primal_1)
 ordem=11
 print("fit")
+import pdb; pdb.set_trace()
 fit=np.polyfit(range(len(lg)),lg,ordem)
 x=sympy.Symbol('x',real=True,positive=True)
 func=0
@@ -3017,7 +3021,7 @@ saida = np.append(saida,np.array([percent_nos_ativos, normaL2_max, normaLinf_max
 
 name_saida = 'saida.csv'
 with open(name_saida, 'a+') as file:
-    file.write(str(percent_nos_ativos)+','+str(normaL2_max)+','+str(normaLinf_max)+','+str(loop)+'\n')
+    file.write(str(percent_nos_ativos)+','+str(normaL2_max)+','+str(normaLinf_max)+','+str(loop)+','+str(kkk)+'\n')
 loop += 1
 np.save('loop', np.array([loop]))
 # M1.mb.write_file(ext_h5m_out)
