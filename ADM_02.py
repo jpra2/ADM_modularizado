@@ -2823,16 +2823,19 @@ perm_xx_tag=M1.mb.tag_get_handle("Perm_xx", 1, types.MB_TYPE_DOUBLE, types.MB_TA
 GIDs=M1.mb.tag_get_data(M1.ID_reordenado_tag,M1.all_volumes,flat=True)
 perms_xx=M1.mb.tag_get_data(M1.perm_tag,M1.all_volumes)[:,0]
 cont=0
-for v in M1.all_volumes:
-    gid=GIDs[cont]
-    M1.mb.tag_set_data(ERRO_tag,v,erro[gid])
-    M1.mb.tag_set_data(ERROadm1_tag,v,erroADM1[gid])
-    M1.mb.tag_set_data(Sol_TPFA_tag,v,SOL_TPFA[gid])
-    M1.mb.tag_set_data(Sol_ADM_tag,v,SOL_ADM_fina[gid])
-    M1.mb.tag_set_data(perm_xx_tag,v,perms_xx[cont])
-    cont+=1
-
+# for v in M1.all_volumes:
+#     gid=GIDs[cont]
+#     M1.mb.tag_set_data(ERRO_tag,v,erro[gid])
+#     M1.mb.tag_set_data(ERROadm1_tag,v,erroADM1[gid])
+#     M1.mb.tag_set_data(Sol_TPFA_tag,v,SOL_TPFA[gid])
+#     M1.mb.tag_set_data(Sol_ADM_tag,v,SOL_ADM_fina[gid])
+#     M1.mb.tag_set_data(perm_xx_tag,v,perms_xx[cont])
+#     cont+=1
 M1.mb.tag_set_data(ERRO_tag,M1.all_volumes,erro[GIDs])
+M1.mb.tag_set_data(ERROadm1_tag,M1.all_volumes,erroADM1[GIDs])
+M1.mb.tag_set_data(Sol_TPFA_tag,M1.all_volumes,SOL_TPFA[GIDs])
+M1.mb.tag_set_data(Sol_ADM_tag,M1.all_volumes,SOL_ADM_fina[GIDs])
+M1.mb.tag_set_data(perm_xx_tag,M1.all_volumes,perms_xx)
 
 
 i=0

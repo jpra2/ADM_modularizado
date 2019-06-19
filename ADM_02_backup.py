@@ -10,7 +10,7 @@ import cython
 from scipy.sparse import csc_matrix, csr_matrix, lil_matrix, vstack, hstack, linalg, identity, find
 
 __all__ = ['M1', 'bvn', 'bvd', 'nx', 'ny', 'nz', 'lx', 'ly', 'lz', 'x1', 'y1', 'z1', 'input_file',
-           'l1', 'l2', 'nc1', 'nc2']
+           'l1', 'l2', 'nc1', 'nc2', 'L2_meshset']
 
 class MeshManager:
     def __init__(self,mesh_file, dim=3):
@@ -425,7 +425,7 @@ def get_box(conjunto, all_centroids, limites, return_inds):
 
 #--------------Início dos parâmetros de entrada-------------------
 # M1= MeshManager('27x27x27.msh')          # Objeto que armazenará as informações da malha
-input_file = '30x30x45'
+input_file = '45x45x45'
 ext_msh_in = input_file + '.msh'
 ext_h5m_out = input_file + '_malha_adm.h5m'
 ext_vtk_out = input_file + 'saida.vtk'
@@ -439,8 +439,8 @@ all_volumes=M1.all_volumes
 M1.all_centroids=np.array([M1.mtu.get_average_position([v]) for v in all_volumes])
 all_centroids = M1.all_centroids
 
-nx=30
-ny=30
+nx=45
+ny=45
 nz=45
 
 lx=20

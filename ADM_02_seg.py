@@ -425,9 +425,9 @@ ext_vtk_out = input_file + 'saida_'
 # M1 esta sendo importado de ADM_02
 # M1= MeshManager(ext_msh_in)          # Objeto que armazenará as informações da malha
 all_volumes=M1.all_volumes
-ks = np.load('ks.npy')
+parametro_k = np.load('ks.npy')
 loop = np.load('loop.npy')[0]
-len_ks = len(ks)
+len_ks = len(parametro_k)
 
 # Ci = n: Ci -> Razão de engrossamento ni nível i (em relação ao nível i-1),
 # n -> número de blocos em cada uma das 3 direções (mesmo número em todas)
@@ -2009,7 +2009,7 @@ for m2 in meshset_by_L2:
             ar=float(M1.mb.tag_get_data(ares_tag,ver_1))
             ar3=float(M1.mb.tag_get_data(ares3_tag,ver_1))
             ar4=M1.mb.tag_get_data(ares4_tag,M1.mtu.get_bridge_adjacencies(elem_by_L1,2,3),flat=True).max()
-            kkk = ks[loop]
+            kkk = parametro_k[loop]
             ar4 *= kkk
             #ar5=float(M1.mb.tag_get_data(ares5_tag,ver_1))
             ar6=float(M1.mb.tag_get_data(ares6_tag,ver_1))
@@ -3002,7 +3002,8 @@ saida = np.append(saida,np.array([percent_nos_ativos, normaL2_max, normaLinf_max
 name_saida = 'saida.csv'
 with open(name_saida, 'a+') as file:
     file.write(str(percent_nos_ativos)+','+str(normaL2_max)+','+str(normaLinf_max)+','+str(loop)+','+str(kkk)+'\n')
-
+print('kkk: ', kkk)
+print('\n')
 M1.mb.write_file(ext_vtk_out+str(loop)+'.vtk', [av])
 loop += 1
 np.save('loop', np.array([loop]))

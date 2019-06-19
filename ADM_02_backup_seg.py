@@ -432,9 +432,9 @@ ext_vtk_out = input_file + 'saida.vtk'
 # M1= MeshManager(ext_msh_in)          # Objeto que armazenará as informações da malha
 
 all_volumes=M1.all_volumes
-ks = np.load('ks.npy')
+parametro_k = np.load('ks.npy')
 loop = np.load('loop.npy')[0]
-len_ks = len(ks)
+len_ks = len(parametro_k)
 
 # Ci = n: Ci -> Razão de engrossamento ni nível i (em relação ao nível i-1),
 # n -> número de blocos em cada uma das 3 direções (mesmo número em todas)
@@ -882,7 +882,7 @@ t0=time.time()
 # ---- Criação e preenchimento da árvore de meshsets----------------------------
 # Esse bloco é executado apenas uma vez em um problema bifásico, sua eficiência
 # não é criticamente importante.
-L2_meshset=M1.mb.create_meshset()       # root Meshset
+# L2_meshset=M1.mb.create_meshset()       # root Meshset
 
 ###########################################################################################
 #jp:modifiquei as tags abaixo para sparse
@@ -1281,7 +1281,6 @@ faces_adjs_by_dual = np.load('faces_adjs_by_dual.npy')
 
 print(time.time()-t1,"criou meshset")
 
-
 t_invaii=time.time()
 meshsets_duais=M1.mb.get_child_meshsets(dual_1_meshset)
 
@@ -1460,45 +1459,47 @@ for m2 in meshset_by_L2:
         perm1=M1.mb.tag_get_data(M1.perm_tag,elem_by_L1).reshape([len(elem_by_L1),9])
         med1_x=sum(perm1[:,0])/len(perm1[:,0])
         med_perm_by_primal_1.append(med1_x)
-med_perm_by_primal_1=np.sort(med_perm_by_primal_1)
-s=1.0    #Parâmetro da secante
-lg=np.log(med_perm_by_primal_1)
-ordem=11
-print("fit")
-import pdb; pdb.set_trace()
-fit=np.polyfit(range(len(lg)),lg,ordem)
-x=sympy.Symbol('x',real=True,positive=True)
-func=0
-for i in range(ordem+1):
-    func+=fit[i]*x**(ordem-i)
-print("deriv")
-derivada=sympy.diff(func,x)
-inc_secante=(lg[-1]-lg[0])/len(lg)
-print("solve")
-equa=sympy.Eq(derivada,2*inc_secante)
-#real_roots=sympy.solve(equa)
-ind_inferior=int(sympy.nsolve(equa,0.1*len(lg),verify=False))
-if ind_inferior<0:
-    ind_inferior=0
-ind_superior=int(sympy.nsolve(equa,0.9*len(lg),verify=False))
-if ind_superior>len(lg)-1:
-    ind_superior=len(lg)-1
+med_perm_by_primal_1 = np.ones(len(vertices))
+# med_perm_by_primal_1=np.sort(med_perm_by_primal_1)
+# s=1.0    #Parâmetro da secante
+# lg=np.log(med_perm_by_primal_1)
+# ordem=11
+# print("fit")
+# fit=np.polyfit(range(len(lg)),lg,ordem)
+# x=sympy.Symbol('x',real=True,positive=True)
+# func=0
+# for i in range(ordem+1):
+#     func+=fit[i]*x**(ordem-i)
+# print("deriv")
+# derivada=sympy.diff(func,x)
+# inc_secante=(lg[-1]-lg[0])/len(lg)
+# print("solve")
+# equa=sympy.Eq(derivada,2*inc_secante)
+# #real_roots=sympy.solve(equa)
+# ind_inferior=int(sympy.nsolve(equa,0.1*len(lg),verify=False))
+# if ind_inferior<0:
+#     ind_inferior=0
+# ind_superior=int(sympy.nsolve(equa,0.9*len(lg),verify=False))
+# if ind_superior>len(lg)-1:
+#     ind_superior=len(lg)-1
+#
+# try:
+#     new_inc_secante=(lg[ind_superior]-lg[ind_inferior])/(ind_superior-ind_inferior)
+#     eq2=sympy.Eq(derivada,new_inc_secante)
+#     new_ind_inferior=int(sympy.nsolve(eq2,ind_inferior, verify=False))
+#     if new_ind_inferior<ind_inferior:
+#         new_ind_inferior=ind_inferior
+#     new_ind_superior=int(sympy.nsolve(eq2,ind_superior, verify=False))
+#     if new_ind_superior>ind_superior:
+#         new_ind_superior=ind_superior
+# except:
+#     new_ind_superior = -1
+#     new_ind_inferior = 0
 
-try:
-    new_inc_secante=(lg[ind_superior]-lg[ind_inferior])/(ind_superior-ind_inferior)
-    eq2=sympy.Eq(derivada,new_inc_secante)
-    new_ind_inferior=int(sympy.nsolve(eq2,ind_inferior, verify=False))
-    if new_ind_inferior<ind_inferior:
-        new_ind_inferior=ind_inferior
-    new_ind_superior=int(sympy.nsolve(eq2,ind_superior, verify=False))
-    if new_ind_superior>ind_superior:
-        new_ind_superior=ind_superior
-except:
-    new_ind_superior = -1
-    new_ind_inferior = 0
-
-ind_inferior=new_ind_inferior
-ind_superior=new_ind_superior
+# ind_inferior=new_ind_inferior
+# ind_superior=new_ind_superior
+ind_inferior=0
+ind_superior=-1
 vt=med_perm_by_primal_1[ind_inferior]
 
 if first:
@@ -2002,7 +2003,7 @@ for m2 in meshset_by_L2:
             maior que 1 refina menos
             [1.0, 2.0]
             """
-            kkk = ks[loop]
+            kkk = parametro_k[loop]
             ar4 *= kkk
             #ar5=float(M1.mb.tag_get_data(ares5_tag,ver_1))
             ar6=float(M1.mb.tag_get_data(ares6_tag,ver_1))
@@ -2088,7 +2089,6 @@ for m2 in meshset_by_L2:
 # ------------------------------------------------------------------------------
 print('Definição da malha ADM: ',time.time()-t0)
 t0=time.time()
-
 
 av=M1.mb.create_meshset()
 M1.mb.add_entities(av,M1.all_volumes)
