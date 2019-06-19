@@ -6,10 +6,10 @@ import time
 
 def remover():
 
-    list = ['OP_AMS.npz', 'OR_AMS.npz', 'residuo.npy', 'SOL_ADM_fina.npy', 'saida.csv',
+    list2 = ['OP_AMS.npz', 'OR_AMS.npz', 'residuo.npy', 'SOL_ADM_fina.npy', 'saida.csv',
             'faces_adjs_by_dual.npy', 'intern_adjs_by_dual.npy']
 
-    for name in list:
+    for name in list2:
         try:
             # shutil.rmtree('OP_AMS.npz')
             os.remove(name)
