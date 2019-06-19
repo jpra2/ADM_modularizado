@@ -881,7 +881,7 @@ t0=time.time()
 
 l2_meshset_tag = M1.mb.tag_get_handle('L2_MESHSET')
 L2_meshset=M1.mb.tag_get_data(l2_meshset_tag, 0, flat=True)[0]
-L2_meshset = M1.mb.get_entities_by_handle(L2_meshset)
+#L2_meshset = M1.mb.get_entities_by_handle(L2_meshset)
 
 
 ###########################################################################################
@@ -1225,67 +1225,69 @@ dual_1_meshset=M1.mb.create_meshset()
 D_x=max(Lx-int(Lx/l1[0])*l1[0],Lx-int(Lx/l2[0])*l2[0])
 D_y=max(Ly-int(Ly/l1[1])*l1[1],Ly-int(Ly/l2[1])*l2[1])
 D_z=max(Lz-int(Lz/l1[2])*l1[2],Lz-int(Lz/l2[2])*l2[2])
-for i in range(len(lxd1)-1):
-    x0=lxd1[i]
-    x1=lxd1[i+1]
-    box_x=np.array([[x0-0.01,ymin,zmin],[x1+0.01,ymax,zmax]])
-    vols_x=get_box(M1.all_volumes, all_centroids, box_x, False)
-    x_centroids=np.array([M1.mtu.get_average_position([v]) for v in vols_x])
-    for j in range(len(lyd1)-1):
-        y0=lyd1[j]
-        y1=lyd1[j+1]
-        box_y=np.array([[x0-0.01,y0-0.01,zmin],[x1+0.01,y1+0.01,zmax]])
-        vols_y=get_box(vols_x, x_centroids, box_y, False)
-        y_centroids=np.array([M1.mtu.get_average_position([v]) for v in vols_y])
-        for k in range(len(lzd1)-1):
-            z0=lzd1[k]
-            z1=lzd1[k+1]
-            tb=time.time()
-            box_dual_1=np.array([[x0-0.01,y0-0.01,z0-0.01],[x1+0.01,y1+0.01,z1+0.01]])
-            vols=get_box(vols_y, y_centroids, box_dual_1, False)
-            tipo=M1.mb.tag_get_data(D1_tag,vols,flat=True)
-            inter=rng.Range(np.array(vols)[np.where(tipo==0)[0]])
+# for i in range(len(lxd1)-1):
+#     x0=lxd1[i]
+#     x1=lxd1[i+1]
+#     box_x=np.array([[x0-0.01,ymin,zmin],[x1+0.01,ymax,zmax]])
+#     vols_x=get_box(M1.all_volumes, all_centroids, box_x, False)
+#     x_centroids=np.array([M1.mtu.get_average_position([v]) for v in vols_x])
+#     for j in range(len(lyd1)-1):
+#         y0=lyd1[j]
+#         y1=lyd1[j+1]
+#         box_y=np.array([[x0-0.01,y0-0.01,zmin],[x1+0.01,y1+0.01,zmax]])
+#         vols_y=get_box(vols_x, x_centroids, box_y, False)
+#         y_centroids=np.array([M1.mtu.get_average_position([v]) for v in vols_y])
+#         for k in range(len(lzd1)-1):
+#             z0=lzd1[k]
+#             z1=lzd1[k+1]
+#             tb=time.time()
+#             box_dual_1=np.array([[x0-0.01,y0-0.01,z0-0.01],[x1+0.01,y1+0.01,z1+0.01]])
+#             vols=get_box(vols_y, y_centroids, box_dual_1, False)
+#             tipo=M1.mb.tag_get_data(D1_tag,vols,flat=True)
+#             inter=rng.Range(np.array(vols)[np.where(tipo==0)[0]])
+#
+#             M1.mb.tag_set_data(local_id_int_tag,inter,range(len(inter)))
+#             add_topology(inter,local_id_int_tag,intern_adjs_by_dual)
+#
+#
+#             fac=rng.Range(np.array(vols)[np.where(tipo==1)[0]])
+#             fac_centroids=np.array([M1.mtu.get_average_position([f]) for f in fac])
+#
+#             box_faces_x=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x0+lx/2,y1+ly/2,z1+lz/2]])
+#             box_faces_y=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y0+ly/2,z1+lz/2]])
+#             box_faces_z=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z0+lz/2]])
+#
+#             faces_x=get_box(fac, fac_centroids, box_faces_x, False)
+#
+#             faces_y=get_box(fac, fac_centroids, box_faces_y, False)
+#             f1=rng.unite(faces_x,faces_y)
+#
+#             faces_z=get_box(fac, fac_centroids, box_faces_z, False)
+#             f1=rng.unite(f1,faces_z)
+#
+#             if i==len(lxd1)-2:
+#                 box_faces_x2=np.array([[x1-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
+#                 faces_x2=get_box(fac, fac_centroids, box_faces_x2, False)
+#                 f1=rng.unite(f1,faces_x2)
+#
+#             if j==len(lyd1)-2:
+#                 box_faces_y2=np.array([[x0-lx/2,y1-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
+#                 faces_y2=get_box(fac, fac_centroids, box_faces_y2, False)
+#                 f1=rng.unite(f1,faces_y2)
+#
+#             if k==len(lzd1)-2:
+#                 box_faces_z2=np.array([[x0-lx/2,y0-ly/2,z1-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
+#                 faces_z2=get_box(fac, fac_centroids, box_faces_z2, False)
+#                 f1=rng.unite(f1,faces_z2)
+#
+#             sgids+=len(f1)
+#             M1.mb.tag_set_data(local_id_fac_tag,f1,range(len(f1)))
+#             add_topology(f1,local_id_fac_tag,faces_adjs_by_dual)
 
-            M1.mb.tag_set_data(local_id_int_tag,inter,range(len(inter)))
-            add_topology(inter,local_id_int_tag,intern_adjs_by_dual)
-
-
-            fac=rng.Range(np.array(vols)[np.where(tipo==1)[0]])
-            fac_centroids=np.array([M1.mtu.get_average_position([f]) for f in fac])
-
-            box_faces_x=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x0+lx/2,y1+ly/2,z1+lz/2]])
-            box_faces_y=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y0+ly/2,z1+lz/2]])
-            box_faces_z=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z0+lz/2]])
-
-            faces_x=get_box(fac, fac_centroids, box_faces_x, False)
-
-            faces_y=get_box(fac, fac_centroids, box_faces_y, False)
-            f1=rng.unite(faces_x,faces_y)
-
-            faces_z=get_box(fac, fac_centroids, box_faces_z, False)
-            f1=rng.unite(f1,faces_z)
-
-            if i==len(lxd1)-2:
-                box_faces_x2=np.array([[x1-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
-                faces_x2=get_box(fac, fac_centroids, box_faces_x2, False)
-                f1=rng.unite(f1,faces_x2)
-
-            if j==len(lyd1)-2:
-                box_faces_y2=np.array([[x0-lx/2,y1-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
-                faces_y2=get_box(fac, fac_centroids, box_faces_y2, False)
-                f1=rng.unite(f1,faces_y2)
-
-            if k==len(lzd1)-2:
-                box_faces_z2=np.array([[x0-lx/2,y0-ly/2,z1-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
-                faces_z2=get_box(fac, fac_centroids, box_faces_z2, False)
-                f1=rng.unite(f1,faces_z2)
-
-            sgids+=len(f1)
-            M1.mb.tag_set_data(local_id_fac_tag,f1,range(len(f1)))
-            add_topology(f1,local_id_fac_tag,faces_adjs_by_dual)
+faces_adjs_by_dual = np.load('faces_adjs_by_dual.npy')
+intern_adjs_by_dual = np.load('intern_adjs_by_dual.npy')
 
 print(time.time()-t1,"criou meshset")
-
 
 t_invaii=time.time()
 meshsets_duais=M1.mb.get_child_meshsets(dual_1_meshset)
@@ -1411,7 +1413,10 @@ m_loc=csc_matrix((fd,(fl,fc)),shape=(nf,nf))
 lgp=np.concatenate(np.array(lgp))
 cgp=range(nf)
 dgp=np.ones(len(lgp))
-permut_g=csc_matrix((dgp,(lgp,cgp)),shape=(nf,nf))
+try:
+    permut_g=csc_matrix((dgp,(lgp,cgp)),shape=(nf,nf))
+except:
+    import pdb; pdb.set_trace()
 
 invbAff=permut_g*m_loc*permut_g.transpose()
 
@@ -1445,6 +1450,7 @@ except:
     print("criará o vetor para refinamento")
     SOL_ADM_f = np.repeat(1,len(M1.all_volumes))
     res = np.repeat(1,len(M1.all_volumes))
+
 
 gids_p_d=M1.mb.tag_get_data(M1.ID_reordenado_tag,volumes_d,flat=True)
 gids_p_n=M1.mb.tag_get_data(M1.ID_reordenado_tag,volumes_n,flat=True)
@@ -2786,15 +2792,19 @@ SOL_ADM_1=linalg.spsolve(OR_ADM*T*OP_ADM,OR_ADM*b)    #-OR_ADM*T*corr_adm1_sd   
 
 SOL_ADM_fina_1=OP_ADM*SOL_ADM_1#-corr_adm1_sd.transpose()[0]
 
-if first:
-    print("resolvendo TPFA")
-    t0=time.time()
-    SOL_TPFA=linalg.spsolve(T,b)
-    print("resolveu TPFA: ",time.time()-t0+t_assembly,t_assembly)
-    np.save('SOL_TPFA.npy', SOL_TPFA)
-else:
-    SOL_TPFA = np.load('SOL_TPFA.npy')
-
+# if first:
+#     try:
+#         SOL_TPFA = np.load('SOL_TPFA.npy')
+#     except:
+#         print("resolvendo TPFA")
+#         t0=time.time()
+#         SOL_TPFA=linalg.spsolve(T,b)
+#         print("resolveu TPFA: ",time.time()-t0+t_assembly,t_assembly)
+#         np.save('SOL_TPFA.npy', SOL_TPFA)
+# else:
+#     SOL_TPFA = np.load('SOL_TPFA.npy')
+first = False
+SOL_TPFA = np.load('SOL_TPFA.npy')
 
 erro=np.zeros(len(SOL_TPFA))
 for i in range(len(SOL_TPFA)):
@@ -2947,6 +2957,7 @@ k=D1*b
 k2=D_inv*LU
 max_iter=3000
 tol=1
+j=0
 for i in range(int(max_iter/500)):
     if x1.max()<10000+tol and x1.min()>4000-tol:
         print(x1.max(),x1.min(),i*(j+1),"iterações")
@@ -2991,11 +3002,12 @@ saida = np.append(saida,np.array([percent_nos_ativos, normaL2_max, normaLinf_max
 name_saida = 'saida.csv'
 with open(name_saida, 'a+') as file:
     file.write(str(percent_nos_ativos)+','+str(normaL2_max)+','+str(normaLinf_max)+','+str(loop)+'\n')
+
+M1.mb.write_file(ext_vtk_out+str(loop), [av])
 loop += 1
 np.save('loop', np.array([loop]))
 
 # M1.mb.write_file(ext_h5m_out)
-M1.mb.write_file(ext_vtk_out, [av])
 # np.save('faces_adjs_by_dual', faces_adjs_by_dual)
 # np.save('intern_adjs_by_dual', intern_adjs_by_dual)
 # import pdb; pdb.set_trace()
@@ -3041,3 +3053,4 @@ M1.mb.write_file(ext_vtk_out, [av])
 # plt.plot(ex,l2i,'r')
 # plt.savefig("erro_20000_cond.png")
 # plt.savefig("Norma_l2_20000_cond.png")
+import pdb; pdb.set_trace()

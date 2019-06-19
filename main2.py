@@ -54,4 +54,6 @@ with open('saida.csv', 'w') as f:
 for i in range(len(ks)):
     time.sleep(3)
     # from ADM_02_backup_seg import *
-    from ADM_02_seg import *
+    # from ADM_02_seg import *
+    os.system('python ADM_02_seg.py')
+    import pdb; pdb.set_trace()

@@ -55,7 +55,8 @@ class MeshManager:
 
         self.create_tags()
         # self.set_k_and_phi_structured_spe10()
-        self.set_k()
+        # self.set_k()
+        self.set_k2()
         #self.set_information("PERM", self.all_volumes, 3)
         self.get_boundary_faces()
         self.gravity = False
@@ -188,8 +189,20 @@ class MeshManager:
             self.mb.tag_set_data(self.perm_tag, v, perm02)
 
         verif_perm_tag = self.mb.tag_get_handle('verif_perm', 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        self.verif_perm_tag = verif_perm_tag
         self.mb.tag_set_data(verif_perm_tag, vols1, np.repeat(k01, len(vols1)))
         self.mb.tag_set_data(verif_perm_tag, vols2, np.repeat(k02, len(vols2)))
+        phi = 0.3
+        self.mb.tag_set_data(self.phi_tag, self.all_volumes, np.repeat(phi, len(self.all_volumes)))
+
+    def set_k2(self):
+        k = 1.0
+        perm_tensor = [k, 0, 0,
+                       0, k, 0,
+                       0, 0, k]
+
+        for v in self.all_volumes:
+            self.mb.tag_set_data(self.perm_tag, v, perm_tensor)
         phi = 0.3
         self.mb.tag_set_data(self.phi_tag, self.all_volumes, np.repeat(phi, len(self.all_volumes)))
 
@@ -2261,6 +2274,7 @@ OR_AMS=csc_matrix((d1,(l1,c1)),shape=(nv,len(M1.all_volumes)))
 OP_AMS=PAD
 if first:
     scipy.sparse.save_npz('OP_AMS.npz',OP_AMS)
+    scipy.sparse.save_npz('OR_AMS', OR_AMS)
 
 v=M1.mb.create_meshset()
 M1.mb.add_entities(v,vertices)
@@ -2770,16 +2784,19 @@ SOL_ADM_1=linalg.spsolve(OR_ADM*T*OP_ADM,OR_ADM*b)    #-OR_ADM*T*corr_adm1_sd   
 
 SOL_ADM_fina_1=OP_ADM*SOL_ADM_1#-corr_adm1_sd.transpose()[0]
 
-# if first:
-#     print("resolvendo TPFA")
-#     t0=time.time()
-#     SOL_TPFA=linalg.spsolve(T,b)
-#     print("resolveu TPFA: ",time.time()-t0+t_assembly,t_assembly)
-#     np.save('SOL_TPFA.npy', SOL_TPFA)
-# else:
-#     SOL_TPFA = np.load('SOL_TPFA.npy')
+if first:
+    try:
+        SOL_TPFA = np.load('SOL_TPFA.npy')
+    except:
+        print("resolvendo TPFA")
+        t0=time.time()
+        SOL_TPFA=linalg.spsolve(T,b)
+        print("resolveu TPFA: ",time.time()-t0+t_assembly,t_assembly)
+        np.save('SOL_TPFA.npy', SOL_TPFA)
+else:
+    SOL_TPFA = np.load('SOL_TPFA.npy')
 first = True
-SOL_TPFA = np.load('SOL_TPFA.npy')
+# SOL_TPFA = np.load('SOL_TPFA.npy')
 
 
 erro=np.zeros(len(SOL_TPFA))
@@ -2933,6 +2950,7 @@ k=D1*b
 k2=D_inv*LU
 max_iter=3000
 tol=1
+j=0
 for i in range(int(max_iter/500)):
     if x1.max()<10000+tol and x1.min()>4000-tol:
         print(x1.max(),x1.min(),i*(j+1),"iterações")
@@ -2972,8 +2990,8 @@ np.save('loop', np.array([loop]))
 '''
 # M1.mb.write_file(ext_h5m_out)
 # M1.mb.write_file(ext_vtk_out, [av])
-# np.save('faces_adjs_by_dual', faces_adjs_by_dual)
-# np.save('intern_adjs_by_dual', intern_adjs_by_dual)
+np.save('faces_adjs_by_dual', faces_adjs_by_dual)
+np.save('intern_adjs_by_dual', intern_adjs_by_dual)
 # import pdb; pdb.set_trace()
 # # 18  ADM->3.407s TPFA->2.515s
 # # 30  ADM->22.02 TPFA->12.86s
