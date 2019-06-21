@@ -18,7 +18,8 @@ def remover():
 
 remover()
 
-ks = np.array([0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0])
+# ks = np.array([0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0])
+ks = np.array([1.0])
 np.save('ks', ks)
 np.save('loop', np.array([0]))
 np.save('len_ks', np.array([len(ks)]))
@@ -37,6 +38,6 @@ for i in range(len(ks)):
     time.sleep(2)
     # from ADM_02_backup_seg import *
     # from ADM_02_seg import *
-    os.system('python ADM_02_backup_seg.py')
-    # os.system('python ADM_02_seg.py')
-    import pdb; pdb.set_trace()
+    # os.system('python ADM_02_backup_seg.py')
+    os.system('python ADM_02_seg.py')
+    

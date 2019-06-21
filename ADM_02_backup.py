@@ -10,7 +10,7 @@ import cython
 from scipy.sparse import csc_matrix, csr_matrix, lil_matrix, vstack, hstack, linalg, identity, find
 
 __all__ = ['M1', 'bvn', 'bvd', 'nx', 'ny', 'nz', 'lx', 'ly', 'lz', 'x1', 'y1', 'z1', 'input_file',
-           'l1', 'l2', 'nc1', 'nc2', 'L2_meshset']
+           'l11', 'l22', 'nc1', 'nc2', 'L2_meshset']
 
 class MeshManager:
     def __init__(self,mesh_file, dim=3):
@@ -492,9 +492,9 @@ Cent_wels = all_centroids[inds_pocos]
 # n -> número de blocos em cada uma das 3 direções (mesmo número em todas)
 l1=[3*lx,3*ly,3*lz]
 l2=[9*lx,9*ly,9*lz]
+l11 = l1[:]
+l22 = l2[:]
 # Posição aproximada de cada completação
-
-
 
 #--------------fim dos parâmetros de entrada------------------------------------
 print("")
@@ -794,7 +794,6 @@ lx1, ly1, lz1 = [], [], []
 for i in range(int(l2[0]/l1[0])):   lx1.append(i*l1[0])
 for i in range(int(l2[1]/l1[1])):   ly1.append(i*l1[1])
 for i in range(int(l2[2]/l1[2])):   lz1.append(i*l1[2])
-
 
 D_x=max(Lx-int(Lx/l1[0])*l1[0],Lx-int(Lx/l2[0])*l2[0])
 D_y=max(Ly-int(Ly/l1[1])*l1[1],Ly-int(Ly/l2[1])*l2[1])

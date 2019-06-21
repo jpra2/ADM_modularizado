@@ -448,7 +448,7 @@ cent_tag = M1.mb.tag_get_handle('CENT')
 # y1=ny*ly
 # z1=nz*lz
 # Distância, em relação ao poço, até onde se usa malha fina
-r0 = 4
+r0 = 1
 # Distância, em relação ao poço, até onde se usa malha intermediária
 r1 = 1
 '''
@@ -488,6 +488,8 @@ Cent_wels = all_centroids[inds_pocos]
 # n -> número de blocos em cada uma das 3 direções (mesmo número em todas)
 # l1=[3*lx,3*ly,3*lz]
 # l2=[9*lx,9*ly,9*lz]
+l1 = l11
+l2 = l22
 # Posição aproximada de cada completação
 
 
@@ -790,7 +792,6 @@ lx1, ly1, lz1 = [], [], []
 for i in range(int(l2[0]/l1[0])):   lx1.append(i*l1[0])
 for i in range(int(l2[1]/l1[1])):   ly1.append(i*l1[1])
 for i in range(int(l2[2]/l1[2])):   lz1.append(i*l1[2])
-
 
 D_x=max(Lx-int(Lx/l1[0])*l1[0],Lx-int(Lx/l2[0])*l2[0])
 D_y=max(Ly-int(Ly/l1[1])*l1[1],Ly-int(Ly/l2[1])*l2[1])
@@ -3005,6 +3006,7 @@ with open(name_saida, 'a+') as file:
 print('kkk: ', kkk)
 print('\n')
 M1.mb.write_file(ext_vtk_out+str(loop)+'.vtk', [av])
+M1.mb.write_file(ext_h5m_out)
 loop += 1
 np.save('loop', np.array([loop]))
 

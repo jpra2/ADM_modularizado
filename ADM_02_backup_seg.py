@@ -495,6 +495,8 @@ Cent_wels = all_centroids[inds_pocos]
 # n -> número de blocos em cada uma das 3 direções (mesmo número em todas)
 # l1=[3*lx,3*ly,3*lz]
 # l2=[9*lx,9*ly,9*lz]
+l1 = l11
+l2 = l22
 # Posição aproximada de cada completação
 
 
@@ -797,7 +799,6 @@ lx1, ly1, lz1 = [], [], []
 for i in range(int(l2[0]/l1[0])):   lx1.append(i*l1[0])
 for i in range(int(l2[1]/l1[1])):   ly1.append(i*l1[1])
 for i in range(int(l2[2]/l1[2])):   lz1.append(i*l1[2])
-
 
 D_x=max(Lx-int(Lx/l1[0])*l1[0],Lx-int(Lx/l2[0])*l2[0])
 D_y=max(Ly-int(Ly/l1[1])*l1[1],Ly-int(Ly/l2[1])*l2[1])

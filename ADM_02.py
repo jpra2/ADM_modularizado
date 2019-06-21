@@ -11,7 +11,7 @@ from scipy.sparse import csc_matrix, csr_matrix, lil_matrix, vstack, hstack, lin
 from ADM_02 import *
 
 __all__ = ['M1', 'bvn', 'bvd', 'nx', 'ny', 'nz', 'lx', 'ly', 'lz', 'x1', 'y1', 'z1', 'input_file',
-           'l1', 'l2']
+           'l11', 'l22']
 
 class MeshManager:
     def __init__(self,mesh_file, dim=3):
@@ -86,6 +86,7 @@ class MeshManager:
         self.ID_reordenado_tag = self.mb.tag_get_handle("ID_reord_tag", 1, types.MB_TYPE_INTEGER, types.MB_TAG_SPARSE, True)
         self.phi_tag = self.mb.tag_get_handle("PHI", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         self.k_eq_tag = self.mb.tag_get_handle("K_EQ", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        self.kharm_tag = self.mb.tag_get_handle("KHARM", 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
 
 
     def create_vertices(self, coords):
@@ -263,6 +264,7 @@ class MeshManager:
         vol_to_pos=dict(zip(self.all_volumes,range(len(self.all_volumes))))
         cont=0
         K_eq=[]
+        K_HARM = []
         for f in self.all_faces:
             adjs=ADJs[cont]
             adjsv=ADJsv[cont]
@@ -295,11 +297,15 @@ class MeshManager:
                 #area = self.mb.tag_get_data(self.area_tag, face, flat=True)[0]
                 #s_gr = self.gama*keq*(centroid2[2]-centroid1[2])
                 keq = k_harm*area/(self.mi*norm)
+                kkharm = k_harm*area/norm
 
                 K_eq.append(keq)
+                K_HARM.append(kkharm)
             else:
                 K_eq.append(0.0)
+                K_HARM.append(0.0)
         self.mb.tag_set_data(self.k_eq_tag, self.all_faces, K_eq)
+        self.mb.tag_set_data(self.kharm_tag, self.all_faces, K_HARM)
 
     def set_k_and_phi_structured_spe10(self):
         ks = np.load('spe10_perms_and_phi.npz')['perms']
@@ -431,7 +437,7 @@ def get_box(conjunto, all_centroids, limites, return_inds):
 
 #--------------Início dos parâmetros de entrada-------------------
 # M1= MeshManager('27x27x27.msh')          # Objeto que armazenará as informações da malha
-input_file = '45x45x45'
+input_file = '30x30x45'
 ext_msh_in = input_file + '.msh'
 ext_h5m_out = input_file + '_malha_adm.h5m'
 ext_vtk_out = input_file + 'saida.vtk'
@@ -448,8 +454,8 @@ all_centroids = M1.all_centroids
 cent_tag = M1.mb.tag_get_handle('CENT', 3, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
 M1.mb.tag_set_data(cent_tag, M1.all_volumes, all_centroids)
 
-nx=45
-ny=45
+nx=30
+ny=30
 nz=45
 
 lx=20
@@ -459,16 +465,17 @@ lz=2
 x1=nx*lx
 y1=ny*ly
 z1=nz*lz
+
 # Distância, em relação ao poço, até onde se usa malha fina
-r0 = 4
+r0 = 1
 # Distância, em relação ao poço, até onde se usa malha intermediária
 r1 = 1
-'''
-bvd = np.array([np.array([x1-lx, 0.0, 0.0]), np.array([x1, y1, lz])])
-bvn = np.array([np.array([0.0, 0.0, z1-lz]), np.array([lx, y1, z1])])
-'''
-bvd = np.array([np.array([0.0, 0.0, 0.0]), np.array([lx, ly, z1])])
-bvn = np.array([np.array([x1-lx, y1-ly, 0.0]), np.array([x1, y1, z1])])
+
+bvd = np.array([np.array([0.0, 0.0, z1-lz]), np.array([x1/2, y1, z1])])
+bvn = np.array([np.array([x1/2, 0.0, z1-lz]), np.array([x1, y1, z1])])
+
+# bvd = np.array([np.array([0.0, 0.0, 0.0]), np.array([lx, ly, z1])])
+# bvn = np.array([np.array([x1-lx, y1-ly, 0.0]), np.array([x1, y1, z1])])
 #bvd = np.array([np.array([0.0, 0.0, y2]), np.array([y0, y0, y0])])
 #bvn = np.array([np.array([0.0, 0.0, 0.0]), np.array([y0, y0, y1])])
 
@@ -498,8 +505,10 @@ Cent_wels = all_centroids[inds_pocos]
 
 # Ci = n: Ci -> Razão de engrossamento ni nível i (em relação ao nível i-1),
 # n -> número de blocos em cada uma das 3 direções (mesmo número em todas)
-l1=[5*lx,5*ly,5*lz]
-l2=[15*lx,15*ly,15*lz]
+l1=[3*lx,3*ly,3*lz]
+l2=[9*lx,9*ly,9*lz]
+l11 = l1[:]
+l22 = l2[:]
 # Posição aproximada de cada completação
 
 
@@ -759,7 +768,8 @@ ly2.append(Ly)
 lz2.append(Lz)
 #-------------------------------------------------------------------------------
 press = 4000.0
-vazao = 10000.0
+# vazao = 10000.0
+vazao = press
 dirichlet_meshset = M1.mb.create_meshset()
 neumann_meshset = M1.mb.create_meshset()
 
@@ -802,7 +812,6 @@ lx1, ly1, lz1 = [], [], []
 for i in range(int(l2[0]/l1[0])):   lx1.append(i*l1[0])
 for i in range(int(l2[1]/l1[1])):   ly1.append(i*l1[1])
 for i in range(int(l2[2]/l1[2])):   lz1.append(i*l1[2])
-
 
 D_x=max(Lx-int(Lx/l1[0])*l1[0],Lx-int(Lx/l2[0])*l2[0])
 D_y=max(Ly-int(Ly/l1[1])*l1[1],Ly-int(Ly/l2[1])*l2[1])
