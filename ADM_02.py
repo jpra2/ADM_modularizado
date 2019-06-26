@@ -11,7 +11,7 @@ from scipy.sparse import csc_matrix, csr_matrix, lil_matrix, vstack, hstack, lin
 from ADM_02 import *
 
 __all__ = ['M1', 'bvn', 'bvd', 'nx', 'ny', 'nz', 'lx', 'ly', 'lz', 'x1', 'y1', 'z1', 'input_file',
-           'l11', 'l22']
+           'l11', 'l22', 'press', 'vazao']
 
 class MeshManager:
     def __init__(self,mesh_file, dim=3):

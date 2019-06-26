@@ -26,9 +26,6 @@ np.save('len_ks', np.array([len(ks)]))
 with open('saida.csv', 'w') as f:
     f.write('Percentual_volumes_ativos,normaL2_max,normaLinf_max,loop,kkk\n')
 
-
-
-
 # from ADM_02 import *
 # from ADM_02_seg import *
 
@@ -40,4 +37,3 @@ for i in range(len(ks)):
     # from ADM_02_seg import *
     # os.system('python ADM_02_backup_seg.py')
     os.system('python ADM_02_seg.py')
-    
